@@ -21,23 +21,31 @@ terminado            0.8.3
 torch                1.4.0              
 torchsummary         1.5.1              
 torchvision          0.5.0                         
+
+conda create -n CancerTrans python=3.5
+conda activate CancerTrans
+conda install -c rdkit rdkit
+pip install pubchempy
+
 ```
+
+
 
 ## Run Step
 
 ```
 step1
-根据GDSC给的pubchem id得到smiles inchi
+# Get the Drug SMILES information in the NCBI pubchem database based on the pubchem id from GDSC provided.
 python Step1_PubchemID2smile.py GDSC_data/Drug_listTue_Aug10_2021.csv 
 
 
 step2 
-先写了一个类，用来得到 drug_id 对应 cosmic_id 的rna数据，可调用
+# This is a python Class script to get the cell line RNA-seq data base the "drug-id and cosmic_id".
 python Step1_getData.py
 
 
 step3 
-构建模型
+# The DeepTTC model script, includ Data split and model train/test.
 python Step3_model.py
 
 ```
