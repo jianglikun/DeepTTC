@@ -14,7 +14,7 @@ import pandas as pd
 import codecs
 from sklearn.metrics import mean_squared_error
 from lifelines.utils import concordance_index
-from scipy.stats import pearsonr,spearmanr
+from scipy.stats import pearsonr, spearmanr
 import copy
 import time
 import pickle
@@ -35,25 +35,26 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class data_process_loader(data.Dataset):
-	def __init__(self, list_IDs, labels, drug_df,rna_df):
-		'Initialization'
-		self.labels = labels
-		self.list_IDs = list_IDs
-		self.drug_df = drug_df
-		self.rna_df = rna_df
+    def __init__(self, list_IDs, labels, drug_df, rna_df):
+        'Initialization'
+        self.labels = labels
+        self.list_IDs = list_IDs
+        self.drug_df = drug_df
+        self.rna_df = rna_df
 
-	def __len__(self):
-		'Denotes the total number of samples'
-		return len(self.list_IDs)
+    def __len__(self):
+        'Denotes the total number of samples'
+        return len(self.list_IDs)
 
-	def __getitem__(self, index):
-		'Generates one sample of data'
-		index = self.list_IDs[index]
-		v_d = self.drug_df.iloc[index]['drug_encoding']
-		v_p = np.array(self.rna_df.iloc[index])
-		y = self.labels[index]
+    def __getitem__(self, index):
+        'Generates one sample of data'
+        index = self.list_IDs[index]
+        v_d = self.drug_df.iloc[index]['drug_encoding']
+        v_p = np.array(self.rna_df.iloc[index])
+        y = self.labels[index]
 
-		return v_d, v_p, y
+        return v_d, v_p, y
+
 
 class transformer(nn.Sequential):
     def __init__(self):
@@ -68,16 +69,17 @@ class transformer(nn.Sequential):
         transformer_hidden_dropout_rate = 0.1
 
         self.emb = Embeddings(input_dim_drug,
-                         transformer_emb_size_drug,
-                         50,
-                         transformer_dropout_rate)
+                              transformer_emb_size_drug,
+                              50,
+                              transformer_dropout_rate)
 
         self.encoder = Encoder_MultipleLayers(transformer_n_layer_drug,
-                                         transformer_emb_size_drug,
-                                         transformer_intermediate_size_drug,
-                                         transformer_num_attention_heads_drug,
-                                         transformer_attention_probs_dropout,
-                                         transformer_hidden_dropout_rate)
+                                              transformer_emb_size_drug,
+                                              transformer_intermediate_size_drug,
+                                              transformer_num_attention_heads_drug,
+                                              transformer_attention_probs_dropout,
+                                              transformer_hidden_dropout_rate)
+
     def forward(self, v):
         e = v[0].long().to(device)
         e_mask = v[1].long().to(device)
@@ -88,6 +90,7 @@ class transformer(nn.Sequential):
         encoded_layers = self.encoder(emb.float(), ex_e_mask.float())
         return encoded_layers[:, 0]
 
+
 class MLP(nn.Sequential):
     def __init__(self):
         input_dim_gene = 17737
@@ -96,7 +99,8 @@ class MLP(nn.Sequential):
         super(MLP, self).__init__()
         layer_size = len(mlp_hidden_dims_gene) + 1
         dims = [input_dim_gene] + mlp_hidden_dims_gene + [hidden_dim_gene]
-        self.predictor = nn.ModuleList([nn.Linear(dims[i], dims[i + 1]) for i in range(layer_size)])
+        self.predictor = nn.ModuleList(
+            [nn.Linear(dims[i], dims[i + 1]) for i in range(layer_size)])
 
     def forward(self, v):
         # predict
@@ -104,6 +108,7 @@ class MLP(nn.Sequential):
         for i, l in enumerate(self.predictor):
             v = F.relu(l(v))
         return v
+
 
 class Classifier(nn.Sequential):
     def __init__(self, model_drug, model_gene):
@@ -113,10 +118,12 @@ class Classifier(nn.Sequential):
         self.model_drug = model_drug
         self.model_gene = model_gene
         self.dropout = nn.Dropout(0.1)
-        self.hidden_dims =  [1024, 1024, 512]
+        self.hidden_dims = [1024, 1024, 512]
         layer_size = len(self.hidden_dims) + 1
-        dims = [self.input_dim_drug + self.input_dim_gene] + self.hidden_dims + [1]
-        self.predictor = nn.ModuleList([nn.Linear(dims[i], dims[i + 1]) for i in range(layer_size)])
+        dims = [self.input_dim_drug + self.input_dim_gene] + \
+            self.hidden_dims + [1]
+        self.predictor = nn.ModuleList(
+            [nn.Linear(dims[i], dims[i + 1]) for i in range(layer_size)])
 
     def forward(self, v_D, v_P):
         # each encoding
@@ -133,24 +140,26 @@ class Classifier(nn.Sequential):
 
 
 class DeepTTC:
-    def __init__(self,modeldir):
+    def __init__(self, modeldir):
         model_drug = transformer()
         model_gene = MLP()
-        self.model = Classifier(model_drug,model_gene)
+        self.model = Classifier(model_drug, model_gene)
         self.device = torch.device('cuda:0')
         self.modeldir = modeldir
-        self.record_file = os.path.join(self.modeldir, "valid_markdowntable.txt")
+        self.record_file = os.path.join(
+            self.modeldir, "valid_markdowntable.txt")
         self.pkl_file = os.path.join(self.modeldir, "loss_curve_iter.pkl")
 
-    def test(self,datagenerator,model):
+    def test(self, datagenerator, model):
         y_label = []
         y_pred = []
         model.eval()
-        for i,(v_drug,v_gene,label) in enumerate(datagenerator):
-            score = model(v_drug,v_gene)
+        for i, (v_drug, v_gene, label) in enumerate(datagenerator):
+            score = model(v_drug, v_gene)
             loss_fct = torch.nn.MSELoss()
             n = torch.squeeze(score, 1)
-            loss = loss_fct(n, Variable(torch.from_numpy(np.array(label)).float()).to(self.device))
+            loss = loss_fct(n, Variable(torch.from_numpy(
+                np.array(label)).float()).to(self.device))
             logits = torch.squeeze(score).detach().cpu().numpy()
             label_ids = label.to('cpu').numpy()
             y_label = y_label + label_ids.flatten().tolist()
@@ -159,14 +168,14 @@ class DeepTTC:
         model.train()
 
         return y_label, y_pred, \
-               mean_squared_error(y_label, y_pred), \
-               np.sqrt(mean_squared_error(y_label, y_pred)), \
-               pearsonr(y_label, y_pred)[0], \
-               pearsonr(y_label, y_pred)[1], \
-               spearmanr(y_label, y_pred)[0], \
-               spearmanr(y_label, y_pred)[1], \
-               concordance_index(y_label, y_pred), \
-               loss
+            mean_squared_error(y_label, y_pred), \
+            np.sqrt(mean_squared_error(y_label, y_pred)), \
+            pearsonr(y_label, y_pred)[0], \
+            pearsonr(y_label, y_pred)[1], \
+            spearmanr(y_label, y_pred)[0], \
+            spearmanr(y_label, y_pred)[1], \
+            concordance_index(y_label, y_pred), \
+            loss
 
     def train(self, train_drug, train_rna, val_drug, val_rna):
         lr = 1e-4
@@ -175,7 +184,8 @@ class DeepTTC:
         train_epoch = 3
         self.model = self.model.to(self.device)
         # self.model = torch.nn.DataParallel(self.model, device_ids=[0, 5])
-        opt = torch.optim.Adam(self.model.parameters(), lr=lr, weight_decay=decay)
+        opt = torch.optim.Adam(self.model.parameters(),
+                               lr=lr, weight_decay=decay)
         loss_history = []
 
         params = {'batch_size': BATCH_SIZE,
@@ -191,12 +201,12 @@ class DeepTTC:
         model_max = copy.deepcopy(self.model)
 
         valid_metric_record = []
-        valid_metric_header = ['# epoch',"MSE", 'RMSE',
-                                    "Pearson Correlation", "with p-value",
-                                    'Spearman Correlation',"with p-value2",
-                                    "Concordance Index"]
+        valid_metric_header = ['# epoch', "MSE", 'RMSE',
+                               "Pearson Correlation", "with p-value",
+                               'Spearman Correlation', "with p-value2",
+                               "Concordance Index"]
         table = PrettyTable(valid_metric_header)
-        float2str = lambda x: '%0.4f' % x
+        def float2str(x): return '%0.4f' % x
         print('--- Go for Training ---')
         writer = SummaryWriter(self.modeldir, comment='Drug_Transformer_MLP')
         t_start = time.time()
@@ -207,7 +217,8 @@ class DeepTTC:
                 # print(v_d,v_p)
                 # v_d = v_d.float().to(self.device)
                 score = self.model(v_d, v_p)
-                label = Variable(torch.from_numpy(np.array(label))).float().to(self.device)
+                label = Variable(torch.from_numpy(
+                    np.array(label))).float().to(self.device)
 
                 loss_fct = torch.nn.MSELoss()
                 n = torch.squeeze(score, 1).float()
@@ -222,16 +233,16 @@ class DeepTTC:
                 if (i % 1000 == 0):
                     t_now = time.time()
                     print('Training at Epoch ' + str(epo + 1) +
-                          ' iteration ' + str(i) + \
-                          ' with loss ' + str(loss.cpu().detach().numpy())[:7] + \
+                          ' iteration ' + str(i) +
+                          ' with loss ' + str(loss.cpu().detach().numpy())[:7] +
                           ". Total time " + str(int(t_now - t_start) / 3600)[:7] + " hours")
 
             with torch.set_grad_enabled(False):
-                ### regression: MSE, Pearson Correlation, with p-value, Concordance Index
-                y_true,y_pred, mse, rmse, \
-                person, p_val, \
-                spearman, s_p_val, CI,\
-                loss_val = self.test(validation_generator, self.model)
+                # regression: MSE, Pearson Correlation, with p-value, Concordance Index
+                y_true, y_pred, mse, rmse, \
+                    person, p_val, \
+                    spearman, s_p_val, CI,\
+                    loss_val = self.test(validation_generator, self.model)
                 lst = ["epoch " + str(epo)] + list(map(float2str, [mse, rmse, person, p_val, spearman,
                                                                    s_p_val, CI]))
                 valid_metric_record.append(lst)
@@ -251,7 +262,8 @@ class DeepTTC:
                     writer.add_scalar("valid/pearson_correlation", person, epo)
                     writer.add_scalar("valid/concordance_index", CI, epo)
                     writer.add_scalar("valid/Spearman", spearman, epo)
-                    writer.add_scalar("Loss/valid", loss_val.item(), iteration_loss)
+                    writer.add_scalar(
+                        "Loss/valid", loss_val.item(), iteration_loss)
             table.add_row(lst)
 
         self.model = model_max
@@ -311,7 +323,7 @@ if __name__ == '__main__':
 
     # step1 数据切分
     from Step2_DataEncoding import DataEncoding
-    vocab_dir = '/home/jlk/Project/023_CancerTrans/DeepTTC'
+    vocab_dir = '.'
     obj = DataEncoding(vocab_dir=vocab_dir)
 
     # 切分完成
@@ -322,7 +334,7 @@ if __name__ == '__main__':
         testdata=testdata)
 
     # step2：构造模型
-    modeldir = '/home/jlk/Project/023_CancerTrans/DeepTTC/Model_80'
+    modeldir = './Model_80'
     modelfile = modeldir + '/model.pt'
     if not os.path.exists(modeldir):
         os.mkdir(modeldir)
@@ -332,6 +344,3 @@ if __name__ == '__main__':
               val_drug=testdata, val_rna=test_rnadata)
     net.save_model()
     print("Model Saveed :{}".format(modelfile))
-
-
-
