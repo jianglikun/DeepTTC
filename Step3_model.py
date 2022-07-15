@@ -24,7 +24,7 @@ from torch.utils import data
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch import dropout, nn
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import SequentialSampler
 
 from prettytable import PrettyTable
@@ -213,7 +213,7 @@ class DeepTTC:
         table = PrettyTable(valid_metric_header)
         def float2str(x): return '%0.4f' % x
         print('--- Go for Training ---')
-        writer = SummaryWriter(self.modeldir, comment='Drug_Transformer_MLP')
+        #writer = SummaryWriter(self.modeldir, comment='Drug_Transformer_MLP')
         t_start = time.time()
         iteration_loss = 0
 
