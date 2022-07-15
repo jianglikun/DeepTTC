@@ -229,7 +229,7 @@ class DeepTTC:
                 n = torch.squeeze(score, 1).float()
                 loss = loss_fct(n, label)
                 loss_history.append(loss.item())
-                writer.add_scalar("Loss/train", loss.item(), iteration_loss)
+                #writer.add_scalar("Loss/train", loss.item(), iteration_loss)
                 iteration_loss += 1
 
                 opt.zero_grad()
@@ -262,13 +262,13 @@ class DeepTTC:
                           ' Spearman Correlation: ' + str(spearman)[:7] +
                           ' with p_value: ' + str(s_p_val)[:7] +
                           ' , Concordance Index: ' + str(CI)[:7])
-                    writer.add_scalar("valid/mse", mse, epo)
-                    writer.add_scalar('valida/rmse', rmse, epo)
-                    writer.add_scalar("valid/pearson_correlation", person, epo)
-                    writer.add_scalar("valid/concordance_index", CI, epo)
-                    writer.add_scalar("valid/Spearman", spearman, epo)
-                    writer.add_scalar(
-                        "Loss/valid", loss_val.item(), iteration_loss)
+                    #writer.add_scalar("valid/mse", mse, epo)
+                    #writer.add_scalar('valida/rmse', rmse, epo)
+                    #writer.add_scalar("valid/pearson_correlation", person, epo)
+                    #writer.add_scalar("valid/concordance_index", CI, epo)
+                    #writer.add_scalar("valid/Spearman", spearman, epo)
+                    # writer.add_scalar(
+                    #    "Loss/valid", loss_val.item(), iteration_loss)
             table.add_row(lst)
 
         self.model = model_max
@@ -279,8 +279,8 @@ class DeepTTC:
             pickle.dump(loss_history, pck)
 
         print('--- Training Finished ---')
-        writer.flush()
-        writer.close()
+        # writer.flush()
+        # writer.close()
 
     def predict(self, drug_data, rna_data):
         print('predicting...')
