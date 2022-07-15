@@ -23,7 +23,7 @@ import torch
 from torch.utils import data
 import torch.nn.functional as F
 from torch.autograd import Variable
-from torch import nn
+from torch import dropout, nn
 from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import SequentialSampler
 
@@ -57,21 +57,19 @@ class data_process_loader(data.Dataset):
 
 
 class transformer(nn.Sequential):
-    def __init__(self):
+    def __init__(self, input_dim_drug,
+                 transformer_emb_size_drug, dropout,
+                 transformer_n_layer_drug,
+                 transformer_intermediate_size_drug,
+                 transformer_num_attention_heads_drug,
+                 transformer_attention_probs_dropout,
+                 transformer_hidden_dropout_rate):
         super(transformer, self).__init__()
-        input_dim_drug = 2586
-        transformer_emb_size_drug = 128
-        transformer_dropout_rate = 0.1
-        transformer_n_layer_drug = 8
-        transformer_intermediate_size_drug = 512
-        transformer_num_attention_heads_drug = 8
-        transformer_attention_probs_dropout = 0.1
-        transformer_hidden_dropout_rate = 0.1
 
         self.emb = Embeddings(input_dim_drug,
                               transformer_emb_size_drug,
                               50,
-                              transformer_dropout_rate)
+                              dropout)
 
         self.encoder = Encoder_MultipleLayers(transformer_n_layer_drug,
                                               transformer_emb_size_drug,
@@ -111,13 +109,13 @@ class MLP(nn.Sequential):
 
 
 class Classifier(nn.Sequential):
-    def __init__(self, model_drug, model_gene):
+    def __init__(self, args, model_drug, model_gene):
         super(Classifier, self).__init__()
-        self.input_dim_drug = 128
-        self.input_dim_gene = 256
+        self.input_dim_drug = args.input_dim_drug_classifier
+        self.input_dim_gene = args.input_dim_gene_classifier
         self.model_drug = model_drug
         self.model_gene = model_gene
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(args.dropout)
         self.hidden_dims = [1024, 1024, 512]
         layer_size = len(self.hidden_dims) + 1
         dims = [self.input_dim_drug + self.input_dim_gene] + \
@@ -140,10 +138,17 @@ class Classifier(nn.Sequential):
 
 
 class DeepTTC:
-    def __init__(self, modeldir):
-        model_drug = transformer()
+    def __init__(self, modeldir, args):
+        model_drug = transformer(args.input_dim_drug,
+                                 args.transformer_emb_size_drug,
+                                 args.dropout,
+                                 args.transformer_n_layer_drug,
+                                 args.transformer_intermediate_size_drug,
+                                 args.transformer_num_attention_heads_drug,
+                                 args.transformer_attention_probs_dropout,
+                                 args.transformer_hidden_dropout_rate)
         model_gene = MLP()
-        self.model = Classifier(model_drug, model_gene)
+        self.model = Classifier(args, model_drug, model_gene)
         self.device = torch.device('cuda:0')
         self.modeldir = modeldir
         self.record_file = os.path.join(
@@ -343,4 +348,4 @@ if __name__ == '__main__':
     net.train(train_drug=traindata, train_rna=train_rnadata,
               val_drug=testdata, val_rna=test_rnadata)
     net.save_model()
-    print("Model Saveed :{}".format(modelfile))
+    print("Model Saved :{}".format(modelfile))

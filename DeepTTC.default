@@ -1,0 +1,24 @@
+[Global_Params]
+train_data_drug = 'input/train_data_drug.csv'
+test_data_drug = 'input/test_data_drug.csv'
+train_data_rna = 'input/train_data_rna.csv'
+test_data_rna = 'input/test_data_rna.csv'
+
+output_dir = 'Model_80'
+model_name = 'model.pt'
+rng_seed=1
+vocab_dir = '.'
+
+input_dim_drug = 2586
+transformer_emb_size_drug = 128
+dropout = 0.1
+transformer_n_layer_drug = 8
+transformer_intermediate_size_drug = 512
+transformer_num_attention_heads_drug = 8
+transformer_attention_probs_dropout = 0.1
+transformer_hidden_dropout_rate = 0.1
+learning_rate = 0.3
+batch_size = 8
+
+input_dim_drug_classifier = 128
+input_dim_gene_classifier = 256
