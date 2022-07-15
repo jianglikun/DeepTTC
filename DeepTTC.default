@@ -1,8 +1,8 @@
 [Global_Params]
-train_data_drug = 'input/train_data_drug.csv'
-test_data_drug = 'input/test_data_drug.csv'
-train_data_rna = 'input/train_data_rna.csv'
-test_data_rna = 'input/test_data_rna.csv'
+train_data_drug = 'input/train_data_drug.pickle'
+test_data_drug = 'input/test_data_drug.pickle'
+train_data_rna = 'input/train_data_rna.pickle'
+test_data_rna = 'input/test_data_rna.pickle'
 
 output_dir = 'Model_80'
 model_name = 'model.pt'

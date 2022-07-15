@@ -99,15 +99,15 @@ def process_data(args):
         train_drug, train_rna, test_drug, test_rna = obj.encode(
             traindata=train_drug,
             testdata=test_drug)
-        train_drug.to_csv(args.train_data_drug)
-        test_drug.to_csv(args.test_data_drug)
-        train_rna.to_csv(args.train_data_rna)
-        test_rna.to_csv(args.test_data_rna)
+        pickle.dump(train_drug, open(args.train_data_drug, 'wb'))
+        pickle.dump(test_drug, open(args.test_data_drug, 'wb'))
+        pickle.dump(train_rna, open(args.train_data_rna, 'wb'))
+        pickle.dump(test_rna, open(args.test_data_rna, 'wb'))
     else:
-        train_drug = pd.read_csv(args.train_data_drug)
-        test_drug = pd.read_csv(args.test_data_drug)
-        train_rna = pd.read_csv(args.train_data_rna)
-        test_rna = pd.read_csv(args.test_data_rna)
+        train_drug = pickle.load(open(args.train_data_drug, 'rb'))
+        test_drug = pickle.load(open(args.test_data_drug, 'rb'))
+        train_rna = pickle.load(open(args.train_data_rna, 'rb'))
+        test_rna = pickle.load(open(args.test_data_rna, 'rb'))
     return train_drug, test_drug, train_rna, test_rna
 
 
