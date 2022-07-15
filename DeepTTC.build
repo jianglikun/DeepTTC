@@ -1,0 +1,17 @@
+Bootstrap: docker
+From: pytorch/pytorch
+
+%labels
+	MANTAINER Oleksandr Narykov
+%setup
+	cp Singularity3.5.sh $SINGULARITY_ROOTFS
+%post
+	apt-get update
+	apt-get install -y git vim
+	chmod +x Singularity3.5.sh
+	./Singularity3.5.sh
+	cd /
+	git clone https://github.com/JDACS4C-IMPROVE/DeepTTC.git
+	conda install -y pandas scikit-learn bioconda pubchempy openpyxl
+	conda install -y -c conda-forge lifelines prettytable
+	python3 -m pip install subword-nmt wget
