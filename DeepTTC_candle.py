@@ -9,6 +9,21 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 
 additional_definitions = [
     {
+        "name": "use_lincs",
+        "type": bool,
+        "help": "Whether to use a LINCS subset of genes ONLY",
+    },
+    {
+        "name": "benchmark_dir",
+        "type": str,
+        "help": "Directory with the input data for benchmarking",
+    },
+    {
+        "name": "benchmark_result_dir",
+        "type": str,
+        "help": "Directory for benchmark output",
+    },
+    {
         "name": "generate_input_data",
         "type": bool,
         "help": "'True' for generating input data anew, 'False' for using stored data",
@@ -37,6 +52,11 @@ additional_definitions = [
         "name": "target_id",
         "type": str,
         "help": "Column name for target",
+    },
+    {
+        "name": "train_data_drug",
+        "type": str,
+        "help": "Drug data for testing",
     },
     {
         "name": "test_data_drug",
@@ -121,7 +141,8 @@ def process_data(args):
     if not os.path.exists(args.train_data_rna) or \
             not os.path.exists(args.test_data_rna) or \
             args.generate_input_data:
-        obj = DataEncoding(args.vocab_dir, args.cancer_id, args.sample_id, args.target_id, args.drug_id)
+        obj = DataEncoding(args.vocab_dir, args.cancer_id,
+                           args.sample_id, args.target_id, args.drug_id)
         train_drug, test_drug = obj.Getdata.ByCancer(random_seed=args.rng_seed)
 
         train_drug, train_rna, test_drug, test_rna = obj.encode(
@@ -162,6 +183,7 @@ def get_model(args):
     net = DeepTTC(modeldir=args.output_dir, args=args)
     return net
 
+
 def run(args):
     train_drug, test_drug, train_rna, test_rna = process_data(args)
     modeldir = args.output_dir
@@ -170,14 +192,16 @@ def run(args):
         os.mkdir(modeldir)
     model = get_model(args)
     model.train(train_drug=train_drug, train_rna=train_rna,
-              val_drug=test_drug, val_rna=test_rna)
+                val_drug=test_drug, val_rna=test_rna)
     model.save_model()
     print("Model Saved :{}".format(modelfile))
 
 
 def benchmark(args):
     model = get_model(args)
-    run_benchmark(model, args.benchmark_dir)
+    run_benchmark(model, args.benchmark_dir,
+                  args.benchmark_result_dir, args.use_lincs)
+
 
 def main():
     gParameters = initialize_parameters()

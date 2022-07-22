@@ -1,6 +1,8 @@
 [Global_Params]
 mode = 'benchmark'
 generate_input_data = True
+benchmark_result_dir = 'results'
+use_lincs = True
 
 cancer_id = 'TCGA_DESC'
 drug_id = 'DRUG_ID'

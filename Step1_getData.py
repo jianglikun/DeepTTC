@@ -20,11 +20,11 @@ import wget
 import zipfile
 
 
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 
 class GetData():
-    def __init__(self, cancer_id, sample_id, target_id, drug_id, generate_smiles = True):
+    def __init__(self, cancer_id, sample_id, target_id, drug_id, generate_smiles=True):
         PATH = './GDSC_data'
 
         rnafile = PATH + '/Cell_line_RMA_proc_basalExp.txt'
@@ -105,7 +105,8 @@ class GetData():
         # ['DATA.908134', 'DATA.1789883', 'DATA.908120', 'DATA.908442'] not in index
         not_index = [908134, 1789883, 908120, 908442]
         print(drug_cell_df.shape)
-        drug_cell_df = drug_cell_df[~drug_cell_df[self.sample_id].isin(not_index)]
+        drug_cell_df = drug_cell_df[~drug_cell_df[self.sample_id].isin(
+            not_index)]
         print(drug_cell_df.shape)
 
         print("step2 过滤药物....")
@@ -158,7 +159,8 @@ class GetData():
 
         for instatnce in col_list:
             sub_df = df[df[col] == instatnce]
-            sub_df = sub_df[[self.drug_id, self.sample_id, self.cancer_id, self.target_id]]
+            sub_df = sub_df[[self.drug_id, self.sample_id,
+                             self.cancer_id, self.target_id]]
             ## 按照 col 来拆分数据集 ##
             # 对于任意一个 instance，1 - ratio 的用于训练，10=test，10=validation
             sub_train, sub_test = train_test_split(
