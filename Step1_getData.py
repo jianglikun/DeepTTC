@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 
 
 class GetData():
-    def __init__(self):
+    def __init__(self, cancer_id, sample_id, target_id, drug_id, generate_smiles = True):
         PATH = './GDSC_data'
 
         rnafile = PATH + '/Cell_line_RMA_proc_basalExp.txt'
@@ -34,6 +34,12 @@ class GetData():
         drug_thred = PATH + '/IC50_thred.txt'
         rna_url = 'https://www.cancerrxgene.org/gdsc1000/GDSC1000_WebResources///Data/preprocessed/Cell_line_RMA_proc_basalExp.txt.zip'
 
+        self.cancer_id = cancer_id
+        self.sample_id = sample_id
+        self.target_id = target_id
+        self.drug_id = drug_id
+        self.generate_smiles = generate_smiles
+
         self.rna_url = rna_url
         self.PATH = PATH
         self.pairfile = pairfile
@@ -41,6 +47,9 @@ class GetData():
         self.rnafile = rnafile
         self.smilefile = smilefile
         self.drug_thred = drug_thred
+
+        self.drug_data = None
+        self.rna_data = None
 
     def _create_smiles(self):
         if os.path.isfile(self.smilefile):
@@ -77,9 +86,15 @@ class GetData():
         smile_data.to_csv(self.smilefile)
         os.remove(smile_file_tmp)
 
+    def setDrug(self, drug_data):
+        self.drug_data = drug_data
+
     def getDrug(self):
         # 读取 smile_inchi.csv
-        self._create_smiles()
+        if self.drug_data is not None:
+            return self.drug_data
+        if self.generate_smiles:
+            self._create_smiles()
         drugdata = pd.read_csv(self.smilefile, index_col=None)
         return drugdata
 
@@ -90,7 +105,7 @@ class GetData():
         # ['DATA.908134', 'DATA.1789883', 'DATA.908120', 'DATA.908442'] not in index
         not_index = [908134, 1789883, 908120, 908442]
         print(drug_cell_df.shape)
-        drug_cell_df = drug_cell_df[~drug_cell_df['COSMIC_ID'].isin(not_index)]
+        drug_cell_df = drug_cell_df[~drug_cell_df[self.sample_id].isin(not_index)]
         print(drug_cell_df.shape)
 
         print("step2 过滤药物....")
@@ -100,38 +115,38 @@ class GetData():
         pub_df = pub_df[(pub_df['PubCHEM'] != 'none') &
                         (pub_df['PubCHEM'] != 'several')]
         print(drug_cell_df.shape)
-        drug_cell_df = drug_cell_df[drug_cell_df['DRUG_ID'].isin(
+        drug_cell_df = drug_cell_df[drug_cell_df[self.drug_id].isin(
             pub_df['drug_id'])]
         print(drug_cell_df.shape)
         return drug_cell_df
 
     def _stat_cancer(self, drug_cell_df):
         print("#" * 50)
-        cancer_num = drug_cell_df['TCGA_DESC'].value_counts().shape[0]
+        cancer_num = drug_cell_df[self.cancer_id].value_counts().shape[0]
         print('#\t 癌症类型一共有：{}'.format(cancer_num))
-        min_cancer_drug = min(drug_cell_df['TCGA_DESC'].value_counts())
-        max_cancer_drug = max(drug_cell_df['TCGA_DESC'].value_counts())
-        mean_cancer_drug = np.mean(drug_cell_df['TCGA_DESC'].value_counts())
+        min_cancer_drug = min(drug_cell_df[self.cancer_id].value_counts())
+        max_cancer_drug = max(drug_cell_df[self.cancer_id].value_counts())
+        mean_cancer_drug = np.mean(drug_cell_df[self.cancer_id].value_counts())
         print('#\t 其中最少的癌症类型对应{}个药物，\n\t 最多的对应{}个药物，\n\t 平均对应{}个药物'.format(
             min_cancer_drug, max_cancer_drug, mean_cancer_drug))
 
     def _stat_cell(self, drug_cell_df):
         print("#" * 50)
-        cell_num = drug_cell_df['COSMIC_ID'].value_counts().shape[0]
+        cell_num = drug_cell_df[self.sample_id].value_counts().shape[0]
         print('#\t 使用的细胞系有：{}'.format(cell_num))
-        min_drug = min(drug_cell_df['COSMIC_ID'].value_counts())
-        max_drug = max(drug_cell_df['COSMIC_ID'].value_counts())
-        mean_drug = np.mean(drug_cell_df['COSMIC_ID'].value_counts())
+        min_drug = min(drug_cell_df[self.sample_id].value_counts())
+        max_drug = max(drug_cell_df[self.sample_id].value_counts())
+        mean_drug = np.mean(drug_cell_df[self.sample_id].value_counts())
         print('#\t 其中最少的细胞系对应{}个药物，\n\t 最多的对应{}个药物，\n\t 平均对应{}个药物'.format(
             min_drug, max_drug, mean_drug))
 
     def _stat_drug(self, drug_cell_df):
         print("#" * 50)
-        drug_num = drug_cell_df['DRUG_ID'].value_counts().shape[0]
+        drug_num = drug_cell_df[self.drug_id].value_counts().shape[0]
         print('#\t 使用的药物有：{}'.format(drug_num))
-        min_cell = min(drug_cell_df['DRUG_ID'].value_counts())
-        max_cell = max(drug_cell_df['DRUG_ID'].value_counts())
-        mean_cell = np.mean(drug_cell_df['DRUG_ID'].value_counts())
+        min_cell = min(drug_cell_df[self.drug_id].value_counts())
+        max_cell = max(drug_cell_df[self.drug_id].value_counts())
+        mean_cell = np.mean(drug_cell_df[self.drug_id].value_counts())
         print('#\t 其中最少的药物对应{}个细胞系，\n\t 最多的对应{}个细胞系，\n\t 平均对应{}个细胞系'.format(
             min_cell, max_cell, mean_cell))
 
@@ -143,7 +158,7 @@ class GetData():
 
         for instatnce in col_list:
             sub_df = df[df[col] == instatnce]
-            sub_df = sub_df[['DRUG_ID', 'COSMIC_ID', 'TCGA_DESC', 'LN_IC50']]
+            sub_df = sub_df[[self.drug_id, self.sample_id, self.cancer_id, self.target_id]]
             ## 按照 col 来拆分数据集 ##
             # 对于任意一个 instance，1 - ratio 的用于训练，10=test，10=validation
             sub_train, sub_test = train_test_split(
@@ -163,25 +178,34 @@ class GetData():
 
         return train_data, test_data
 
+    def setRnaData(self, rna_data):
+        self.rna_data = rna_data
+
+    def getRnaData(self):
+        return self.rna_data
+
     def ByCancer(self, random_seed):
 
         # 理解作者的意思就是按照 癌症类型，随机选95的作为训练
         # 评价没有癌症的准确性，评价不同药物的准确性
 
-        drug_cell_df = pd.read_excel(self.pairfile)
+        if self.rna_data is not None:
+            drug_cell_df = self.rna_data
+        else:
+            drug_cell_df = pd.read_excel(self.pairfile)
         self._stat_drug(drug_cell_df)
         self._stat_cell(drug_cell_df)
         self._stat_cancer(drug_cell_df)
         drug_cell_df = self._filter_pair(drug_cell_df)
 
-        drug_cell_df = drug_cell_df.head(10000)
+        #drug_cell_df = drug_cell_df.head(10000)
         self._stat_drug(drug_cell_df)
         self._stat_cell(drug_cell_df)
         self._stat_cancer(drug_cell_df)
 
-        print(drug_cell_df['TCGA_DESC'].value_counts())
+        print(drug_cell_df[self.cancer_id].value_counts())
 
-        train_data, test_data = self._split(df=drug_cell_df, col='TCGA_DESC',
+        train_data, test_data = self._split(df=drug_cell_df, col=self.cancer_id,
                                             ratio=0.2, random_seed=random_seed)
 
         return train_data, test_data
@@ -197,7 +221,7 @@ class GetData():
         self._stat_cancer(drug_cell_df)
 
         train_data, test_data = self._split(
-            df=drug_cell_df, col='DRUG_ID', ratio=0.2)
+            df=drug_cell_df, col=self.drug_id, ratio=0.2)
 
         return train_data, test_data
 
@@ -212,7 +236,7 @@ class GetData():
         self._stat_cancer(drug_cell_df)
 
         train_data, test_data = self._split(
-            df=drug_cell_df, col='COSMIC_ID', ratio=0.2)
+            df=drug_cell_df, col=self.sample_id, ratio=0.2)
 
         return train_data, test_data
 
@@ -226,23 +250,23 @@ class GetData():
         self._stat_cell(drug_cell_df)
         self._stat_cancer(drug_cell_df)
 
-        cell_list = drug_cell_df['COSMIC_ID'].value_counts().index
-        drug_list = drug_cell_df['DRUG_ID'].value_counts().index
+        cell_list = drug_cell_df[self.sample_id].value_counts().index
+        drug_list = drug_cell_df[self.drug_id].value_counts().index
 
         all_df = pd.DataFrame()
         dup_drug = []
         [dup_drug.extend([i]*len(cell_list)) for i in drug_list]
-        all_df['DRUG_ID'] = dup_drug
+        all_df[self.drug_id] = dup_drug
 
         dup_cell = []
         for i in range(len(drug_list)):
             dup_cell.extend(cell_list)
-        all_df['COSMIC_ID'] = dup_cell
+        all_df[self.sample_id] = dup_cell
 
-        all_df['ID'] = all_df['DRUG_ID'].astype(str).str.cat(
-            all_df['COSMIC_ID'].astype(str), sep='_')
-        drug_cell_df['ID'] = drug_cell_df['DRUG_ID'].astype(
-            str).str.cat(drug_cell_df['COSMIC_ID'].astype(str), sep='_')
+        all_df['ID'] = all_df[self.drug_id].astype(str).str.cat(
+            all_df[self.sample_id].astype(str), sep='_')
+        drug_cell_df['ID'] = drug_cell_df[self.drug_id].astype(
+            str).str.cat(drug_cell_df[self.sample_id].astype(str), sep='_')
         MissingData = all_df[~all_df['ID'].isin(drug_cell_df['ID'])]
 
         print("#"*50)
@@ -251,8 +275,8 @@ class GetData():
             len(drug_list)*len(cell_list)))
         print('但是有的药物和细胞系没有做实验，共有{} Pairs'.format(MissingData.shape[0]))
 
-        # drug_cell_df = drug_cell_df[['COSMIC_ID', 'TCGA_DESC']].drop_duplicates()
-        # cell2cancer_dict = pd.Series(list(drug_cell_df['TCGA_DESC']), index=drug_cell_df['COSMIC_ID'])
+        # drug_cell_df = drug_cell_df[[self.sample_id, self.cancer_id]].drop_duplicates()
+        # cell2cancer_dict = pd.Series(list(drug_cell_df[self.cancer_id]), index=drug_cell_df[self.sample_id])
 
         return drug_cell_df, MissingData
 
@@ -271,7 +295,7 @@ class GetData():
         leave_instatnce = list(
             set(col_list) - set(col_list[sub_start:sub_end]))
 
-        df = df[['DRUG_ID', 'COSMIC_ID', 'TCGA_DESC', 'LN_IC50']]
+        df = df[[self.drug_id, self.sample_id, self.cancer_id, self.target_id]]
         train_data = df[df[col].isin(leave_instatnce)]
         test_data = df[~df[col].isin(leave_instatnce)]
 
@@ -297,7 +321,7 @@ class GetData():
         self._stat_cancer(drug_cell_df)
 
         traindata, testdata = self._LeaveOut(
-            df=drug_cell_df, col='COSMIC_ID', ratio=0.8, random_num=random)
+            df=drug_cell_df, col=self.sample_id, ratio=0.8, random_num=random)
 
         return traindata, testdata
 
@@ -312,7 +336,7 @@ class GetData():
         self._stat_cancer(drug_cell_df)
 
         traindata, testdata = self._LeaveOut(
-            df=drug_cell_df, col='DRUG_ID', ratio=0.8, random_num=random)
+            df=drug_cell_df, col=self.drug_id, ratio=0.8, random_num=random)
 
         return traindata, testdata
 
@@ -405,8 +429,8 @@ class GetData():
 
         for instatnce in col_list:
             sub_df = df[df[col] == instatnce]
-            sub_df = sub_df[['DRUG_ID', 'COSMIC_ID',
-                             'TCGA_DESC', 'LN_IC50', 'Binary_IC50']]
+            sub_df = sub_df[[self.drug_id, self.sample_id,
+                             self.cancer_id, self.target_id, 'Binary_IC50']]
             ## 按照 col 来拆分数据集 ##
             # 对于任意一个 instance，1 - ratio 的用于训练，10=test，10=validation
             sub_train, sub_test = train_test_split(sub_df, test_size=ratio,
@@ -439,7 +463,7 @@ class GetData():
         combine_data = neg_data.append(down_pos_data)
 
         combine_data = combine_data[[
-            'DRUG_ID', 'COSMIC_ID', 'TCGA_DESC', 'LN_IC50', 'Binary_IC50']]
+            self.drug_id, self.sample_id, self.cancer_id, self.target_id, 'Binary_IC50']]
 
         train_data, test_data = train_test_split(combine_data, test_size=ratio,
                                                  random_state=random_seed)
@@ -469,13 +493,13 @@ class GetData():
         ##################################################
         # 按照每种药物得阈值,第一种，直接过滤
         Binary_Drug_list = []
-        drug_cell_df = drug_cell_df[drug_cell_df['DRUG_ID'].isin(drug_list)]
+        drug_cell_df = drug_cell_df[drug_cell_df[self.drug_id].isin(drug_list)]
 
-        # print(drug_cell_df['DRUG_ID'].value_counts().shape)
+        # print(drug_cell_df[self.drug_id].value_counts().shape)
         for idx, row in drug_cell_df.iterrows():
             drug_name = row['DRUG_NAME']
-            drug_id = row['DRUG_ID']
-            ic50 = row['LN_IC50']
+            drug_id = row[self.drug_id]
+            ic50 = row[self.target_id]
             if (ic50 > drugid2thred[drug_id]):
                 Binary_Drug_list.append(1)
             else:
@@ -486,11 +510,11 @@ class GetData():
         # 第二种，补充-2的阈值
         # Binary_Drug_list = []
         #
-        # print(drug_cell_df['DRUG_ID'].value_counts().shape)
+        # print(drug_cell_df[self.drug_id].value_counts().shape)
         # for idx, row in drug_cell_df.iterrows():
         #     drug_name = row['DRUG_NAME']
-        #     drug_id = row['DRUG_ID']
-        #     ic50 = row['LN_IC50']
+        #     drug_id = row[self.drug_id]
+        #     ic50 = row[self.target_id]
         #     if drug_id in drug_list:
         #         if ic50 > drugid2thred[drug_id]:
         #             Binary_Drug_list.append(1)
@@ -506,7 +530,7 @@ class GetData():
         ############################################################################
         # 第三种 直接使用-2的阈值
         # Binary_IC50_list = []
-        # for ic50 in drug_cell_df['LN_IC50']:
+        # for ic50 in drug_cell_df[self.target_id]:
         #     if ic50 > -2:
         #         Binary_IC50_list.append(1)
         #     else:
@@ -523,8 +547,8 @@ class GetData():
         return train_data, test_data
 
     def getRna(self, traindata, testdata):
-        train_rnaid = list(traindata['COSMIC_ID'])
-        test_rnaid = list(testdata['COSMIC_ID'])
+        train_rnaid = list(traindata[self.sample_id])
+        test_rnaid = list(testdata[self.sample_id])
         train_rnaid = ['DATA.'+str(i) for i in train_rnaid]
         test_rnaid = ['DATA.' + str(i) for i in test_rnaid]
 

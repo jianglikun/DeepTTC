@@ -15,10 +15,10 @@ from Step1_getData import GetData
 
 
 class DataEncoding:
-    def __init__(self, vocab_dir):
+    def __init__(self, vocab_dir, cancer_id, sample_id, target_id, drug_id):
         self.vocab_dir = vocab_dir
         # 一个获取数据的函数类
-        self.Getdata = GetData()
+        self.Getdata = GetData(cancer_id, sample_id, target_id, drug_id)
 
     def _drug2emb_encoder(self, smile):
         vocab_path = "{}/ESPF/drug_codes_chembl_freq_1500.txt".format(
@@ -51,6 +51,7 @@ class DataEncoding:
 
     def encode(self, traindata, testdata):
         drug_smiles = self.Getdata.getDrug()
+        print(drug_smiles)
         drugid2smile = dict(
             zip(drug_smiles['drug_id'], drug_smiles['CanonicalSMILES']))
         smile_encode = pd.Series(drug_smiles['CanonicalSMILES'].unique()).apply(

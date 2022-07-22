@@ -30,8 +30,9 @@ from torch.utils.data import SequentialSampler
 from prettytable import PrettyTable
 from subword_nmt.apply_bpe import BPE
 from model_helper import Encoder_MultipleLayers, Embeddings
+from Step2_DataEncoding import DataEncoding
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
 class data_process_loader(data.Dataset):
@@ -41,6 +42,7 @@ class data_process_loader(data.Dataset):
         self.list_IDs = list_IDs
         self.drug_df = drug_df
         self.rna_df = rna_df
+
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -52,6 +54,11 @@ class data_process_loader(data.Dataset):
         v_d = self.drug_df.iloc[index]['drug_encoding']
         v_p = np.array(self.rna_df.iloc[index])
         y = self.labels[index]
+
+        #print(v_d)
+        #print(type(v_d))
+        #print(type(v_p))
+        #print(type(y))
 
         return v_d, v_p, y
 
@@ -90,8 +97,8 @@ class transformer(nn.Sequential):
 
 
 class MLP(nn.Sequential):
-    def __init__(self):
-        input_dim_gene = 17737
+    def __init__(self, input_dim):
+        input_dim_gene = input_dim
         hidden_dim_gene = 256
         mlp_hidden_dims_gene = [1024, 256, 64]
         super(MLP, self).__init__()
@@ -139,7 +146,7 @@ class Classifier(nn.Sequential):
 
 class DeepTTC:
     def __init__(self, modeldir, args):
-        model_drug = transformer(args.input_dim_drug,
+        self.model_drug = transformer(args.input_dim_drug,
                                  args.transformer_emb_size_drug,
                                  args.dropout,
                                  args.transformer_n_layer_drug,
@@ -147,13 +154,13 @@ class DeepTTC:
                                  args.transformer_num_attention_heads_drug,
                                  args.transformer_attention_probs_dropout,
                                  args.transformer_hidden_dropout_rate)
-        model_gene = MLP()
-        self.model = Classifier(args, model_drug, model_gene)
         self.device = torch.device('cuda:0')
         self.modeldir = modeldir
         self.record_file = os.path.join(
             self.modeldir, "valid_markdowntable.txt")
         self.pkl_file = os.path.join(self.modeldir, "loss_curve_iter.pkl")
+        self.args = args
+        self.model = None
 
     def test(self, datagenerator, model):
         y_label = []
@@ -183,6 +190,9 @@ class DeepTTC:
             loss
 
     def train(self, train_drug, train_rna, val_drug, val_rna):
+        model_gene = MLP(input_dim=np.shape(train_rna)[1])
+        self.model = Classifier(self.args, self.model_drug, model_gene)
+
         lr = 1e-4
         decay = 0
         BATCH_SIZE = 64
@@ -201,6 +211,7 @@ class DeepTTC:
             train_drug.index.values, train_drug.Label.values, train_drug, train_rna), **params)
         validation_generator = data.DataLoader(data_process_loader(
             val_drug.index.values, val_drug.Label.values, val_drug, val_rna), **params)
+        print(training_generator)
 
         max_MSE = 10000
         model_max = copy.deepcopy(self.model)
@@ -220,7 +231,7 @@ class DeepTTC:
         for epo in range(train_epoch):
             for i, (v_d, v_p, label) in enumerate(training_generator):
                 # print(v_d,v_p)
-                # v_d = v_d.float().to(self.device)
+                #v_d = v_d.float().to(self.device)
                 score = self.model(v_d, v_p)
                 label = Variable(torch.from_numpy(
                     np.array(label))).float().to(self.device)
@@ -262,13 +273,6 @@ class DeepTTC:
                           ' Spearman Correlation: ' + str(spearman)[:7] +
                           ' with p_value: ' + str(s_p_val)[:7] +
                           ' , Concordance Index: ' + str(CI)[:7])
-                    #writer.add_scalar("valid/mse", mse, epo)
-                    #writer.add_scalar('valida/rmse', rmse, epo)
-                    #writer.add_scalar("valid/pearson_correlation", person, epo)
-                    #writer.add_scalar("valid/concordance_index", CI, epo)
-                    #writer.add_scalar("valid/Spearman", spearman, epo)
-                    # writer.add_scalar(
-                    #    "Loss/valid", loss_val.item(), iteration_loss)
             table.add_row(lst)
 
         self.model = model_max
@@ -279,8 +283,6 @@ class DeepTTC:
             pickle.dump(loss_history, pck)
 
         print('--- Training Finished ---')
-        # writer.flush()
-        # writer.close()
 
     def predict(self, drug_data, rna_data):
         print('predicting...')
@@ -324,10 +326,36 @@ class DeepTTC:
         self.model.load_state_dict(state_dict)
 
 
+    def preprocess(self, rna_data, drug_data, response_data, response_metric='AUC'):
+        args = self.args
+        obj = DataEncoding(args.vocab_dir, args.cancer_id, args.sample_id, args.target_id, args.drug_id)
+        drug_smiles = drug_data
+
+        drugid2smile = dict(
+            zip(drug_smiles['DrugID'], drug_smiles['SMILES']))
+        smile_encode = pd.Series(drug_smiles['SMILES'].unique()).apply(
+            obj._drug2emb_encoder)
+        uniq_smile_dict = dict(
+            zip(drug_smiles['SMILES'].unique(), smile_encode))
+
+        drug_data.drop(['SMILES'], inplace=True, axis=1)
+        drug_data['smiles'] = [drugid2smile[i] for i in drug_data['DrugID']]
+        drug_data['drug_encoding'] = [uniq_smile_dict[i]
+                                      for i in drug_data['smiles']]
+        drug_data = drug_data.reset_index()
+        drug_data['Label'] = response_data['AUC']
+
+        response_data = response_data[['CancID', 'DrugID']]
+        rna_data = pd.merge(response_data, rna_data, on='CancID', how='inner')
+        #train_rnadata = train_rnadata.T
+        drug_data.index = range(drug_data.shape[0])
+        rna_data.index = range(rna_data.shape[0])
+
+        return rna_data, drug_data
+
 if __name__ == '__main__':
 
     # step1 数据切分
-    from Step2_DataEncoding import DataEncoding
     vocab_dir = '.'
     obj = DataEncoding(vocab_dir=vocab_dir)
 

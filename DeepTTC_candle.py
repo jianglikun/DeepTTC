@@ -3,14 +3,40 @@ import torch
 import candle
 from Step3_model import *
 from Step2_DataEncoding import DataEncoding
+from benchmark import run_benchmark
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
 additional_definitions = [
     {
-        "name": "train_data_drug",
+        "name": "generate_input_data",
+        "type": bool,
+        "help": "'True' for generating input data anew, 'False' for using stored data",
+    },
+    {
+        "name": "mode",
         "type": str,
-        "help": "Drug data for training",
+        "help": "Execution mode. Available modes are: 'run', 'benchmark'",
+    },
+    {
+        "name": "cancer_id",
+        "type": str,
+        "help": "Column name for cancer",
+    },
+    {
+        "name": "drug_id",
+        "type": str,
+        "help": "Column name for drug",
+    },
+    {
+        "name": "sample_id",
+        "type": str,
+        "help": "Column name for samples/cell lines",
+    },
+    {
+        "name": "target_id",
+        "type": str,
+        "help": "Column name for target",
     },
     {
         "name": "test_data_drug",
@@ -93,12 +119,19 @@ class DeepTTCCandle(candle.Benchmark):
 def process_data(args):
     train_drug = test_drug = train_rna = test_rna = None
     if not os.path.exists(args.train_data_rna) or \
-            not os.path.exists(args.test_data_rna):
-        obj = DataEncoding(vocab_dir=args.vocab_dir)
+            not os.path.exists(args.test_data_rna) or \
+            args.generate_input_data:
+        obj = DataEncoding(args.vocab_dir, args.cancer_id, args.sample_id, args.target_id, args.drug_id)
         train_drug, test_drug = obj.Getdata.ByCancer(random_seed=args.rng_seed)
+
         train_drug, train_rna, test_drug, test_rna = obj.encode(
             traindata=train_drug,
             testdata=test_drug)
+        print('Train Drug:')
+        print(train_drug)
+        print('Train RNA:')
+        print(train_rna)
+
         pickle.dump(train_drug, open(args.train_data_drug, 'wb'))
         pickle.dump(test_drug, open(args.test_data_drug, 'wb'))
         pickle.dump(train_rna, open(args.train_data_rna, 'wb'))
@@ -125,28 +158,38 @@ def initialize_parameters(default_model='DeepTTC.default'):
     return gParameters
 
 
-def run(gParameters):
-    args = candle.ArgumentStruct(**gParameters)
-    print(args)
+def get_model(args):
+    net = DeepTTC(modeldir=args.output_dir, args=args)
+    return net
 
+def run(args):
     train_drug, test_drug, train_rna, test_rna = process_data(args)
-
-    # step2：构造模型
     modeldir = args.output_dir
     modelfile = os.path.join(modeldir, args.model_name)
     if not os.path.exists(modeldir):
         os.mkdir(modeldir)
-
-    net = DeepTTC(modeldir=modeldir, args=args)
-    net.train(train_drug=train_drug, train_rna=train_rna,
+    model = get_model(args)
+    model.train(train_drug=train_drug, train_rna=train_rna,
               val_drug=test_drug, val_rna=test_rna)
-    net.save_model()
+    model.save_model()
     print("Model Saved :{}".format(modelfile))
 
 
+def benchmark(args):
+    model = get_model(args)
+    run_benchmark(model, args.benchmark_dir)
+
 def main():
     gParameters = initialize_parameters()
-    run(gParameters)
+    args = candle.ArgumentStruct(**gParameters)
+    print(args)
+
+    if args.mode == 'run':
+        run(args)
+    elif args.mode == 'benchmark':
+        benchmark(args)
+    else:
+        raise Exception('Unknown mode. Please check configuration file')
 
 
 if __name__ == "__main__":
