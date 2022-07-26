@@ -35,8 +35,8 @@ sample_id - Column name for samples/cell lines
 
 train_data_drug - Drug data for training
 test_data_drug - Drug data for testing
-train_data_rna = RNA data for training
-test_data_rna = RNA data for testing
+train_data_rna - RNA data for training
+test_data_rna - RNA data for testing
 
 benchmark_dir - Directory with the input data for benchmarking
 output_dir - Output directory for saving model
@@ -56,5 +56,5 @@ learning_rate - Learning rate of the
 batch_size - Size of the training batches
 
 input_dim_drug_classifier - Input size of the drug classifier
-input_dim_gene_classifier = 256
+input_dim_gene_classifier - Input size of the gene classifier
 ```
