@@ -27,7 +27,7 @@ python3 DeepTTC_candle.py --config_file DeepTTC.build
 ## Configuration Parameters
 
 ```
-mode - Execution mode. Available modes are: 'run', 'benchmark
+mode - Execution mode. Available modes are: 'run', 'benchmark'
 generate_input_data - 'True' for generating input data anew, 'False' for using stored data
 benchmark_result_dir - Directory for benchmark output
 use_lincs - Whether to use a LINCS subset of genes ONLY
