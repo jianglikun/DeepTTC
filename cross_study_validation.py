@@ -6,20 +6,22 @@ from pathlib import Path
 from scipy.stats import pearsonr, spearmanr
 from sklearn.model_selection import train_test_split
 
+
 sources = ['ccle', 'ctrp', 'gcsi', 'gdsc1', 'gdsc2']
 
 
-def groupby_src_and_print(df, print_fn=print):
+def groupby_src_and_print(self, df, print_fn=print):
     print_fn(df.groupby('SOURCE').agg(
         {'CancID': 'nunique', 'DrugID': 'nunique'}).reset_index())
 
 
-def load_source(src, datadir, use_lincs=True):
+def load_source(self, src, datadir, use_lincs=True):
     pretty_indent = '#' * 10
     print(f'{pretty_indent} {src.upper()} {pretty_indent}')
 
     # Load data
-    responses = pd.read_csv(f"{datadir}/rsp_{src}.csv")      # Drug response
+    responses = pd.read_csv(
+        f"{datadir}/rsp_{src}.csv")      # Drug response
     gene_expression = pd.read_csv(
         f"{datadir}/ge_{src}.csv")        # Gene expressions
     mordred_descriptors = pd.read_csv(
@@ -38,26 +40,15 @@ def load_source(src, datadir, use_lincs=True):
     cols = ["CancID"] + genes
     gene_expression = gene_expression[cols]
 
-    groupby_src_and_print(responses)
+    self.groupby_src_and_print(responses)
     print("Unique cell lines with gene expressions",
           gene_expression["CancID"].nunique())
-    print("Unique drugs with Mordred", mordred_descriptors["DrugID"].nunique())
-    print("Unique drugs with ECFP2", morgan_fingerprints["DrugID"].nunique())
+    print("Unique drugs with Mordred",
+          mordred_descriptors["DrugID"].nunique())
+    print("Unique drugs with ECFP2",
+          morgan_fingerprints["DrugID"].nunique())
     print("Unique drugs with SMILES", smiles["DrugID"].nunique())
     return gene_expression, mordred_descriptors, morgan_fingerprints, smiles, responses
-
-
-def deep_ttc_preprocess(gene_expression, smiles, responses, model):
-    gene_expression, drug_data = model.preprocess(
-        gene_expression, smiles, responses, 'AUC')
-    #gene_expression = gene_expression.drop(['index'], axis=1)
-    drug_data = drug_data.drop(['index'], axis=1)
-    data = pd.merge(gene_expression, drug_data, on='DrugID', how='inner')
-    gene_expression = gene_expression.drop(['CancID', 'DrugID'], axis=1)
-    gene_expression_columns = gene_expression.columns
-    drug_columns = drug_data.columns
-
-    return data, gene_expression_columns, drug_columns
 
 
 def score(y_true, y_pred):
@@ -71,13 +62,26 @@ def score(y_true, y_pred):
     return scores
 
 
-def run_benchmark(model, data_dir, results_dir, n_splits=10, use_lincs=True):
+def prepare_dataframe(gene_expression, smiles, responses, model):
+    gene_expression, drug_data = model.preprocess(
+        gene_expression, smiles, responses, 'AUC')
+    drug_data = drug_data.drop(['index'], axis=1)
+    data = pd.merge(gene_expression, drug_data, on='DrugID', how='inner')
+    gene_expression = gene_expression.drop(['CancID', 'DrugID'], axis=1)
+    gene_expression_columns = gene_expression.columns
+    drug_columns = drug_data.columns
+
+    return data, gene_expression_columns, drug_columns
+
+
+def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_lincs=True):
     for src in sources:
         datadir = f"{data_dir}/ml.dfs/July2020/data.{src}"
         splitdir = f"{datadir}/splits"
+
         gene_expression, _, _, smiles, responses = load_source(
             src, datadir, use_lincs)
-        data, gene_expression_columns, drug_columns = deep_ttc_preprocess(
+        data, gene_expression_columns, drug_columns = prepare_dataframe(
             gene_expression, smiles, responses, model)
 
         # -----------------------------------------------
@@ -113,6 +117,7 @@ def run_benchmark(model, data_dir, results_dir, n_splits=10, use_lincs=True):
                         val_drug=validation_data[drug_columns], val_rna=validation_data[gene_expression_columns])
 
             # Predict
+            # DeepTTC-specific prediction format
             _, y_pred, _, _, _, _, _, _, _ = model.predict(
                 test_data[drug_columns], test_data[gene_expression_columns])
             y_true = test_data['Label']
@@ -132,7 +137,7 @@ def run_benchmark(model, data_dir, results_dir, n_splits=10, use_lincs=True):
                     continue
                 test_gene_expression, _, _, test_smiles, test_responses = load_source(
                     test_src, data_dir, use_lincs)
-                test_src_data, test_gene_expression_columns, test_drug_columns = deep_ttc_preprocess(
+                test_src_data, test_gene_expression_columns, test_drug_columns = model.preprocess(
                     test_gene_expression, test_smiles, test_responses, model)
                 # Subsetting to the current set of expressed genes!!!
                 _, y_pred, _, _, _, _, _, _, _ = model.predict(

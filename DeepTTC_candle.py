@@ -3,7 +3,7 @@ import torch
 import candle
 from Step3_model import *
 from Step2_DataEncoding import DataEncoding
-from benchmark import run_benchmark
+from cross_study_validation import run_cross_study_analysis
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -199,8 +199,8 @@ def run(args):
 
 def benchmark(args):
     model = get_model(args)
-    run_benchmark(model, args.benchmark_dir,
-                  args.benchmark_result_dir, args.use_lincs)
+    run_cross_study_analysis(model, args.benchmark_dir,
+                             args.benchmark_result_dir, args.use_lincs)
 
 
 def main():
