@@ -13,9 +13,13 @@ Identification of new lead molecules for treatment  of cancer is often the resul
 ```
 ./run.sh writable/DeepTTC_YYYY_MM_DD
 ```
+3. Navigate to DeepTTC folder
+```
+cd $PATH_TO_WRITABLE$/DeepTTC_YYYY_MM_DD/DeepTTC/
+```
 
 
-## Run Step
+## Run
 ```
 python3 DeepTTC_candle.py --config_file DeepTTC.build
 ```
