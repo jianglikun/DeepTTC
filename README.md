@@ -12,20 +12,17 @@ DeepTTC is an end-to-end deep learning model to predict the anti-cancer drug res
 ## Installation steps
 
 1. Build Singularity image
-
-        ```          
+                  
         ./build.sh DeepTTC.build
-        ```
+        
 2. Run Singularity image
 
-        ```
         ./run.sh writable/DeepTTC_YYYY_MM_DD
-        ```
+
 3. Navigate to DeepTTC folder
 
-        ```
         cd $PATH_TO_WRITABLE$/DeepTTC_YYYY_MM_DD/DeepTTC/
-        ```
+
 
 
 ## Run
