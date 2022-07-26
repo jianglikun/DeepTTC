@@ -56,7 +56,7 @@ additional_definitions = [
     {
         "name": "train_data_drug",
         "type": str,
-        "help": "Drug data for testing",
+        "help": "Drug data for training",
     },
     {
         "name": "test_data_drug",
@@ -86,22 +86,22 @@ additional_definitions = [
     {
         "name": "input_dim_drug",
         "type": int,
-        "help": "intermediate size of the drug layers",
+        "help": "Input size of the drug transformer",
     },
     {
         "name": "transformer_emb_size_drug",
         "type": int,
-        "help": "size of the drug embeddings",
+        "help": "Size of the drug embeddings",
     },
     {
         "name": "transformer_n_layer_drug",
         "type": int,
-        "help": "number of layers for drug transformer",
+        "help": "Number of layers for drug transformer",
     },
     {
         "name": "transformer_intermediate_size_drug",
         "type": int,
-        "help": "number of layers for drug transformer",
+        "help": "Intermediate size of the drug layers",
     },
     {
         "name": "transformer_attention_probs_dropout",

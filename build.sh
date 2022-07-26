@@ -30,7 +30,4 @@ LABELED_NAME=$NAME-$DATE
 
 # Create base sif image from recipe (definition) file
 singularity build --fakeroot --sandbox $BASE_PATH/$LABELED_NAME.sif $RECIPE
-# Create overlay with host file system (Singularity >=3.7)
-# singularity overlay create $IMAGE_PATH/$LABELED_NAME
-# Create writable image from the base sif file
 singularity build --fakeroot --sandbox $WRITABLE_PATH/$LABELED_NAME $BASE_PATH/$LABELED_NAME.sif
