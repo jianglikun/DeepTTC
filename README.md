@@ -7,22 +7,25 @@ DeepTTC is an end-to-end deep learning model to predict the anti-cancer drug res
 
 * This model is curated as a part of the [IMPROVE](https://github.com/JDACS4C-IMPROVE) project.
 * Original code: [GitHub](https://github.com/jianglikun/DeepTTC)
-* Original paper: [DeepTTA: a transformer-based model for predicting cancer drug response](https://academic.oup.com/bib/article-abstract/23/3/bbac100/6554594)x
+* Original paper: [DeepTTA: a transformer-based model for predicting cancer drug response](https://academic.oup.com/bib/article-abstract/23/3/bbac100/6554594)
 
 ## Installation steps
 
 1. Build Singularity image
-```          
-./build.sh DeepTTC.build
-```
+
+        ```          
+        ./build.sh DeepTTC.build
+        ```
 2. Run Singularity image
-```
-./run.sh writable/DeepTTC_YYYY_MM_DD
-```
+
+        ```
+        ./run.sh writable/DeepTTC_YYYY_MM_DD
+        ```
 3. Navigate to DeepTTC folder
-```
-cd $PATH_TO_WRITABLE$/DeepTTC_YYYY_MM_DD/DeepTTC/
-```
+
+        ```
+        cd $PATH_TO_WRITABLE$/DeepTTC_YYYY_MM_DD/DeepTTC/
+        ```
 
 
 ## Run
