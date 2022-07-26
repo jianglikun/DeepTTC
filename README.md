@@ -5,9 +5,9 @@ Identification of new lead molecules for treatment  of cancer is often the resul
 
 DeepTTC is an end-to-end deep learning model to predict the anti-cancer drug response. DeepTTC takes gene expression data and chemical strcutures  of drug for drug response prediction. Specifically, get inspiration from natural language processing, DeepTTC use  transformer for drug representation learning. 
 
-This model is curated as a part of the IMPROVE project. 
-Original code: [GitHub](https://github.com/jianglikun/DeepTTC)
-Original paper: [DeepTTA: a transformer-based model for predicting cancer drug response](https://academic.oup.com/bib/article-abstract/23/3/bbac100/6554594)x
+* This model is curated as a part of the [IMPROVE](https://github.com/JDACS4C-IMPROVE) project.
+* Original code: [GitHub](https://github.com/jianglikun/DeepTTC)
+* Original paper: [DeepTTA: a transformer-based model for predicting cancer drug response](https://academic.oup.com/bib/article-abstract/23/3/bbac100/6554594)x
 
 ## Installation steps
 
