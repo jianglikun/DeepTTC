@@ -56,7 +56,7 @@ transformer_intermediate_size_drug - Size of the intermediate drug layers
 transformer_num_attention_heads_drug - number of attention heads for drug transformer
 transformer_attention_probs_dropout - Dropout rate for the attention layers
 transformer_hidden_dropout_rate - Dropout rate for the transformer networks' hidden layers
-learning_rate - Learning rate of the 
+learning_rate - Learning rate of the neural networks
 batch_size - Size of the training batches
 
 input_dim_drug_classifier - Input size of the drug classifier
