@@ -5,18 +5,20 @@ import pandas as pd
 from pathlib import Path
 from scipy.stats import pearsonr, spearmanr
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
 
 sources = ['ccle', 'ctrp', 'gcsi', 'gdsc1', 'gdsc2']
 
 
-def groupby_src_and_print(self, df, print_fn=print):
+def groupby_src_and_print(df, print_fn=print):
     print_fn(df.groupby('SOURCE').agg(
         {'CancID': 'nunique', 'DrugID': 'nunique'}).reset_index())
 
 
-def load_source(self, src, datadir, use_lincs=True):
+def load_source(src, datadir, use_lincs=True):
     pretty_indent = '#' * 10
+    print('Load source datadir: ', datadir)
     print(f'{pretty_indent} {src.upper()} {pretty_indent}')
 
     # Load data
@@ -40,7 +42,7 @@ def load_source(self, src, datadir, use_lincs=True):
     cols = ["CancID"] + genes
     gene_expression = gene_expression[cols]
 
-    self.groupby_src_and_print(responses)
+    groupby_src_and_print(responses)
     print("Unique cell lines with gene expressions",
           gene_expression["CancID"].nunique())
     print("Unique drugs with Mordred",
@@ -63,7 +65,7 @@ def score(y_true, y_pred):
 
 
 def prepare_dataframe(gene_expression, smiles, responses, model):
-    gene_expression, drug_data = model.preprocess(
+    gene_expression, drug_data, responses = model.preprocess(
         gene_expression, smiles, responses, 'AUC')
     drug_data = drug_data.drop(['index'], axis=1)
     data = pd.merge(gene_expression, drug_data, on='DrugID', how='inner')
@@ -79,10 +81,13 @@ def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_linc
         datadir = f"{data_dir}/ml.dfs/July2020/data.{src}"
         splitdir = f"{datadir}/splits"
 
+        print('Datadir: ', datadir)
         gene_expression, _, _, smiles, responses = load_source(
             src, datadir, use_lincs)
         data, gene_expression_columns, drug_columns = prepare_dataframe(
             gene_expression, smiles, responses, model)
+
+        print(data)
 
         # -----------------------------------------------
         #   Train model
@@ -100,6 +105,8 @@ def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_linc
             # Train and test data
             train_data = data.loc[train_id]
             test_data = data.loc[test_id]
+            test_cancid = test_data['CancID']
+            test_drugid = test_data['DrugID']
 
             # Val data from tr_data
             train_data, validation_data = train_test_split(
@@ -108,45 +115,70 @@ def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_linc
             print("Val  ", validation_data.shape)
             print("Test ", test_data.shape)
 
+            scaler = StandardScaler()
+            train_data_gene_expression_scaled = pd.DataFrame(scaler.fit_transform(train_data[gene_expression_columns]))
+            validation_data_gene_expression_scaled = pd.DataFrame(scaler.transform(validation_data[gene_expression_columns]))
+            test_data_gene_expression_scaled = pd.DataFrame(scaler.transform(test_data[gene_expression_columns]))
+
             # Scale
             # Train model
             train_data.index = range(train_data.shape[0])
             validation_data.index = range(validation_data.shape[0])
             test_data.index = range(test_data.shape[0])
-            model.train(train_drug=train_data[drug_columns], train_rna=train_data[gene_expression_columns],
-                        val_drug=validation_data[drug_columns], val_rna=validation_data[gene_expression_columns])
+            model.train(train_drug=train_data[drug_columns], train_rna=train_data_gene_expression_scaled,
+                        val_drug=validation_data[drug_columns], val_rna=validation_data_gene_expression_scaled)
 
             # Predict
             # DeepTTC-specific prediction format
             _, y_pred, _, _, _, _, _, _, _ = model.predict(
-                test_data[drug_columns], test_data[gene_expression_columns])
+                test_data[drug_columns], test_data_gene_expression_scaled)
             y_true = test_data['Label']
 
             # Scores
             scores = score(y_true, y_pred)
-            result = {'y_true': y_true,
+            print(f'CancID: {np.shape(test_cancid)}, DrugID: {np.shape(test_drugid)}, y_true: {np.shape(y_true)}, y_pred: {np.shape(y_pred)}, train_data: {np.shape(train_data)}, test_data: {np.shape(test_data)}')
+            result = {'CancID': test_cancid,
+                      'DrugID': test_drugid,
+                      'y_true': y_true,
                       'y_pred': y_pred}
+            result_df = pd.DataFrame()
+            for key in result:
+                print(key)
+                result_df[key] = result[key]
+            #result_df = pd.DataFrame.from_dict(result)
+            result_df.to_csv(f'{results_dir}/{src}_{src}_split_{split_id}.csv', sep=',')
             pickle.dump(result, open(
                 f'{results_dir}/predictions_{src}_cv_split_{split_id}.pickle', 'wb'))
-            pickle.dump(scores, open(
-                f'{results_dir}/scores_{src}_cv_split_{split_id}.pickle', 'wb'))
+            #pickle.dump(scores, open(
+            #    f'{results_dir}/scores_{src}_cv_split_{split_id}.pickle', 'wb'))
 
             # Test on unrelated datasets
             for test_src in sources:
                 if test_src == src:
                     continue
+                test_datadir = f"{data_dir}/ml.dfs/July2020/data.{test_src}"
                 test_gene_expression, _, _, test_smiles, test_responses = load_source(
-                    test_src, data_dir, use_lincs)
-                test_src_data, test_gene_expression_columns, test_drug_columns = model.preprocess(
+                    test_src, test_datadir, use_lincs)
+                test_src_data, test_gene_expression_columns, test_drug_columns = prepare_dataframe(
                     test_gene_expression, test_smiles, test_responses, model)
                 # Subsetting to the current set of expressed genes!!!
+                test_src_data_gene_expression_scaled = pd.DataFrame(scaler.transform(test_src_data[gene_expression_columns]))
                 _, y_pred, _, _, _, _, _, _, _ = model.predict(
-                    test_src_data[test_drug_columns], test_src_data[gene_expression_columns])
+                    test_src_data[test_drug_columns], test_src_data_gene_expression_scaled)
                 y_true = test_src_data['Label']
-                result = {'y_true': y_true,
+                test_cancid = test_src_data['CancID']
+                test_drugid = test_src_data['DrugID']
+
+                #print(f'{src} on {test_src} y_true: ')
+
+                result = {'CancID': test_cancid,
+                          'DrugID': test_drugid,
+                          'y_true': y_true,
                           'y_pred': y_pred}
+                result_df = pd.DataFrame.from_dict(result)
+                result_df.to_csv(f'{results_dir}/{src}_{test_src}_split_{split_id}.csv', sep=',')
                 scores = score(y_pred, y_true)
-                pickle.dump(result, open(
-                    f'{results_dir}/predictions_{src}_split_{split_id}_on_{test_src}.pickle', 'wb'))
+                #pickle.dump(result, open(
+                #    f'{results_dir}/predictions_{src}_split_{split_id}_on_{test_src}.pickle', 'wb'))
                 pickle.dump(scores, open(
                     f'{results_dir}/scores_{src}_split_{split_id}_on_{test_src}.pickle', 'wb'))

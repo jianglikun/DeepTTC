@@ -200,7 +200,7 @@ def run(args):
 def benchmark(args):
     model = get_model(args)
     run_cross_study_analysis(model, args.benchmark_dir,
-                             args.benchmark_result_dir, args.use_lincs)
+                             args.benchmark_result_dir, use_lincs=args.use_lincs)
 
 
 def main():
