@@ -65,13 +65,14 @@ def score(y_true, y_pred):
 
 
 def prepare_dataframe(gene_expression, smiles, responses, model):
-    gene_expression, drug_data, responses = model.preprocess(
+    gene_expression, drug_data = model.preprocess(
         gene_expression, smiles, responses, 'AUC')
     drug_data = drug_data.drop(['index'], axis=1)
-    data = pd.merge(gene_expression, drug_data, on='DrugID', how='inner')
-    gene_expression = gene_expression.drop(['CancID', 'DrugID'], axis=1)
+    drug_columns = [x for x in drug_data.columns if x not in ['CancID', 'DrugID']]
+    #data = pd.merge(gene_expression, drug_data, on='DrugID', how='inner')
+    data = pd.merge(gene_expression, drug_data, on='CancID', how='inner')
+    gene_expression = gene_expression.drop(['CancID'], axis=1)
     gene_expression_columns = gene_expression.columns
-    drug_columns = drug_data.columns
 
     return data, gene_expression_columns, drug_columns
 
@@ -133,6 +134,8 @@ def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_linc
             _, y_pred, _, _, _, _, _, _, _ = model.predict(
                 test_data[drug_columns], test_data_gene_expression_scaled)
             y_true = test_data['Label']
+            print('Y_true:')
+            print(y_true)
 
             # Scores
             scores = score(y_true, y_pred)
@@ -144,9 +147,13 @@ def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_linc
             result_df = pd.DataFrame()
             for key in result:
                 print(key)
-                result_df[key] = result[key]
+                result_df[key] = np.array(result[key])
+            print('Y_true 2:')
+            print(np.shape(result_df))
+            print(np.shape(y_true))
+            print(result_df)
             #result_df = pd.DataFrame.from_dict(result)
-            result_df.to_csv(f'{results_dir}/{src}_{src}_split_{split_id}.csv', sep=',')
+            result_df.to_csv(f'{results_dir}/{src}_{src}_split_{split_id}.csv', sep=',', index=None)
             pickle.dump(result, open(
                 f'{results_dir}/predictions_{src}_cv_split_{split_id}.pickle', 'wb'))
             #pickle.dump(scores, open(
@@ -176,7 +183,7 @@ def run_cross_study_analysis(model, data_dir, results_dir, n_splits=10, use_linc
                           'y_true': y_true,
                           'y_pred': y_pred}
                 result_df = pd.DataFrame.from_dict(result)
-                result_df.to_csv(f'{results_dir}/{src}_{test_src}_split_{split_id}.csv', sep=',')
+                result_df.to_csv(f'{results_dir}/{src}_{test_src}_split_{split_id}.csv', sep=',', index=None)
                 scores = score(y_pred, y_true)
                 #pickle.dump(result, open(
                 #    f'{results_dir}/predictions_{src}_split_{split_id}_on_{test_src}.pickle', 'wb'))

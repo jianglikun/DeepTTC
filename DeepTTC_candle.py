@@ -1,6 +1,8 @@
 import os
+import wget
 import torch
 import candle
+import subprocess
 from Step3_model import *
 from Step2_DataEncoding import DataEncoding
 from cross_study_validation import run_cross_study_analysis
@@ -153,10 +155,10 @@ def process_data(args):
         print('Train RNA:')
         print(train_rna)
 
-        pickle.dump(train_drug, open(args.train_data_drug, 'wb'))
-        pickle.dump(test_drug, open(args.test_data_drug, 'wb'))
-        pickle.dump(train_rna, open(args.train_data_rna, 'wb'))
-        pickle.dump(test_rna, open(args.test_data_rna, 'wb'))
+        pickle.dump(train_drug, open(args.train_data_drug, 'wb'), protocol=4)
+        pickle.dump(test_drug, open(args.test_data_drug, 'wb'), protocol=4)
+        pickle.dump(train_rna, open(args.train_data_rna, 'wb'), protocol=4)
+        pickle.dump(test_rna, open(args.test_data_rna, 'wb'), protocol=4)
     else:
         train_drug = pickle.load(open(args.train_data_drug, 'rb'))
         test_drug = pickle.load(open(args.test_data_drug, 'rb'))
@@ -183,8 +185,16 @@ def get_model(args):
     net = DeepTTC(modeldir=args.output_dir, args=args)
     return net
 
+def download_gdsc(url):
+    OUT_DIR = 'GDSC_data'
+    url_length = len(url.split('/'))-4
+    if not os.path.isdir(OUT_DIR):
+        os.mkdir(OUT_DIR)
+    subprocess.run(['wget', '--recursive', '-nH', f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
+    #wget.download(url, out=OUT_DIR)
 
 def run(args):
+    download_gdsc(args.default_data_url)
     train_drug, test_drug, train_rna, test_rna = process_data(args)
     modeldir = args.output_dir
     modelfile = os.path.join(modeldir, args.model_name)

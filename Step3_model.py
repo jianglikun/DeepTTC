@@ -208,9 +208,9 @@ class DeepTTC:
                   'num_workers': 0,
                   'drop_last': False}
         training_generator = data.DataLoader(data_process_loader(
-            train_drug.index.values, train_rna.Label.values, train_drug, train_rna), **params)
+            train_drug.index.values, train_drug.Label.values, train_drug, train_rna), **params)
         validation_generator = data.DataLoader(data_process_loader(
-            val_drug.index.values, val_rna.Label.values, val_drug, val_rna), **params)
+            val_drug.index.values, val_drug.Label.values, val_drug, val_rna), **params)
         print(training_generator)
 
         max_MSE = 10000
@@ -288,7 +288,7 @@ class DeepTTC:
         print('predicting...')
         self.model.to(device)
         info = data_process_loader(drug_data.index.values,
-                                   rna_data.Label.values,
+                                   drug_data.Label.values,
                                    drug_data, rna_data)
         params = {'batch_size': 16,
                   'shuffle': False,
@@ -344,20 +344,23 @@ class DeepTTC:
                                       for i in drug_data['smiles']]
         drug_data = drug_data.reset_index()
 
-        #drug_data = pd.merge(response_data, drug_data, on='DrugID', how='inner')
-        #drug_data['Label'] = response_data['AUC']
-
         response_data = response_data[['CancID', 'DrugID', response_metric]]
         response_data.columns = ['CancID', 'DrugID', 'Label']
+        drug_data = pd.merge(response_data, drug_data, on='DrugID', how='inner')
+        #drug_data['Label'] = response_data['AUC']
+
+        #response_data = response_data[['CancID', 'DrugID', response_metric]]
+        #response_data.columns = ['CancID', 'DrugID', 'Label']
         #response_data = response_data[['CancID', 'DrugID']]
-        rna_data = pd.merge(response_data, rna_data, on='CancID', how='inner')
+       
+        #rna_data = pd.merge(response_data, rna_data, on='CancID', how='inner')
         #train_rnadata = train_rnadata.T
         drug_data.index = range(drug_data.shape[0])
         rna_data.index = range(rna_data.shape[0])
 
         print('Preprocessing...!!!')
         print(np.shape(rna_data), np.shape(drug_data))
-        print(list(rna_data.columns))
+        #print(list(rna_data.columns))
         return rna_data, drug_data
 
 if __name__ == '__main__':
