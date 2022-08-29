@@ -53,3 +53,6 @@ step3
 python Step3_model.py
 
 ```
+
+## Paper
+Jiang, Likun, et al. "DeepTTA: a transformer-based model for predicting cancer drug response." Briefings in Bioinformatics 23.3 (2022): bbac100.
