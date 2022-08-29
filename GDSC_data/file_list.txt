@@ -3,3 +3,7 @@ rnafile = PATH + '/Cell_line_RMA_proc_basalExp.txt'
 smilefile = PATH + '/smile_inchi.csv'
 pairfile = PATH + '/GDSC2_fitted_dose_response_25Feb20.xlsx'
 drug_thred = PATH + '/IC50_thred.txt'
+
+rnafile: Cell_line_RMA_proc_basalExp.txt can not unload to github with the large size.
+you can download in from https://www.cancerrxgene.org/gdsc1000/GDSC1000_WebResources/Home.html
+the file address https://www.cancerrxgene.org/gdsc1000/GDSC1000_WebResources///Data/preprocessed/Cell_line_RMA_proc_basalExp.txt.zip
