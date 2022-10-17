@@ -185,13 +185,16 @@ def get_model(args):
     net = DeepTTC(modeldir=args.output_dir, args=args)
     return net
 
+
 def download_gdsc(url):
     OUT_DIR = 'GDSC_data'
     url_length = len(url.split('/'))-4
     if not os.path.isdir(OUT_DIR):
         os.mkdir(OUT_DIR)
-    subprocess.run(['wget', '--recursive', '-nH', f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
+    subprocess.run(['wget', '--recursive', '--no-clobber', '-nH',
+                   f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
     #wget.download(url, out=OUT_DIR)
+
 
 def run(args):
     download_gdsc(args.default_data_url)
