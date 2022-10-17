@@ -5,22 +5,30 @@
 # arg 3 CANDLE_CONFIG
 
 CANDLE_MODEL=/DeepTTC/DeepTTC_candle.py
-if [[ "$#" -ne 3 ]] ; then
+if [[ "$#" -ne 2 ]] ; then
 	    echo "Illegal number of parameters"
-	        echo "CUDA_VISIBLE_DEVICES CANDLE_DATA_DIR CANDLE_CONFIG are required"
-		    exit -1
-	    fi
+	    echo "CUDA_VISIBLE_DEVICES CANDLE_DATA_DIR are required"
+		echo "CANDLE_CONFIG is an optional parameter. It defines a path to the parameter list for the model."
+	    exit -1
+fi
 
-	    CUDA_VISIBLE_DEVICES=$1
-	    CANDLE_DATA_DIR=$2
-	    CANDLE_CONFIG=$3
+if [ ! -z $CANDLE_CONFIG ]
+        if [ ! -f $CANDLE_CONFIG ]
+            echo "Cannot read configuration file! If you want to run model with default parameters leave third option empty."
+			exit -1
+        fi
+fi
 
-	    CMD="python ${CANDLE_MODEL} --config_file ${CANDLE_CONFIG}"
+CUDA_VISIBLE_DEVICES=$1
+CANDLE_DATA_DIR=$2
+CANDLE_CONFIG=$3
 
-	    echo "using container "
-	    echo "using CUDA_VISIBLE_DEVICES ${CUDA_VISIBLE_DEVICES}"
-	    echo "using CANDLE_DATA_DIR ${CANDLE_DATA_DIR}"
-	    echo "using CANDLE_CONFIG ${CANDLE_CONFIG}"
-	    echo "running command ${CMD}"
+CMD="python ${CANDLE_MODEL} --config_file ${CANDLE_CONFIG}"
 
-	    CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} CANDLE_DATA_DIR=${CANDLE_DATA_DIR} $CMD
+echo "using container "
+echo "using CUDA_VISIBLE_DEVICES ${CUDA_VISIBLE_DEVICES}"
+echo "using CANDLE_DATA_DIR ${CANDLE_DATA_DIR}"
+echo "using CANDLE_CONFIG ${CANDLE_CONFIG}"
+echo "running command ${CMD}"
+
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} CANDLE_DATA_DIR=${CANDLE_DATA_DIR} $CMD
