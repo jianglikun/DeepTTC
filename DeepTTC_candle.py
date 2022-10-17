@@ -181,7 +181,7 @@ def initialize_parameters(default_model='DeepTTC.default'):
     dirs_to_check = ['input', 'results']
     for directory in dirs_to_check:
         if not os.path.exists(directory):
-            os.mkdir(dir)
+            os.mkdir(directory)
 
     return gParameters
 
