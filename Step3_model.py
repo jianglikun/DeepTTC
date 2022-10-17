@@ -193,7 +193,7 @@ class DeepTTC:
         model_gene = MLP(input_dim=np.shape(train_rna)[1])
         self.model = Classifier(self.args, self.model_drug, model_gene)
 
-        lr = self.learning_rate
+        lr = self.args.learning_rate
         decay = 0
         BATCH_SIZE = self.args.batch_size
         train_epoch = self.args.epochs
@@ -228,12 +228,12 @@ class DeepTTC:
         t_start = time.time()
         iteration_loss = 0
 
-        ckpt = candle.CandleCkptPyTorch(params)
+        ckpt = candle.CandleCkptPyTorch(vars(self.args))
         ckpt.set_model({"model": self.model, "optimizer": opt})
         J = ckpt.restart(self.model)
         if J is not None:
             initial_epoch = J["epoch"]
-        print("restarting from ckpt: initial_epoch: %i" % initial_epoch)
+            print("restarting from ckpt: initial_epoch: %i" % initial_epoch)
 
         train_loss = None
         for epo in range(train_epoch):
