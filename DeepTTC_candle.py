@@ -178,6 +178,11 @@ def initialize_parameters(default_model='DeepTTC.default'):
     # Initialize parameters
     gParameters = candle.finalize_parameters(common)
 
+    dirs_to_check = ['input', 'results']
+    for directory in dirs_to_check:
+        if not os.path.exists(directory):
+            os.mkdir(dir)
+
     return gParameters
 
 
