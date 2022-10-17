@@ -262,7 +262,7 @@ class DeepTTC:
                           ' with loss ' + train_loss +
                           ". Total time " + str(int(t_now - t_start) / 3600)[:7] + " hours")
 
-            ckpt.ckpt_epoch(epo, train_loss)
+            ckpt.ckpt_epoch(epo, float(train_loss))
 
             with torch.set_grad_enabled(False):
                 # regression: MSE, Pearson Correlation, with p-value, Concordance Index
