@@ -31,6 +31,7 @@ from prettytable import PrettyTable
 from subword_nmt.apply_bpe import BPE
 from model_helper import Encoder_MultipleLayers, Embeddings
 from Step2_DataEncoding import DataEncoding
+import candle
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -43,7 +44,6 @@ class data_process_loader(data.Dataset):
         self.drug_df = drug_df
         self.rna_df = rna_df
 
-
     def __len__(self):
         'Denotes the total number of samples'
         return len(self.list_IDs)
@@ -55,10 +55,10 @@ class data_process_loader(data.Dataset):
         v_p = np.array(self.rna_df.iloc[index])
         y = self.labels[index]
 
-        #print(v_d)
-        #print(type(v_d))
-        #print(type(v_p))
-        #print(type(y))
+        # print(v_d)
+        # print(type(v_d))
+        # print(type(v_p))
+        # print(type(y))
 
         return v_d, v_p, y
 
@@ -147,13 +147,13 @@ class Classifier(nn.Sequential):
 class DeepTTC:
     def __init__(self, modeldir, args):
         self.model_drug = transformer(args.input_dim_drug,
-                                 args.transformer_emb_size_drug,
-                                 args.dropout,
-                                 args.transformer_n_layer_drug,
-                                 args.transformer_intermediate_size_drug,
-                                 args.transformer_num_attention_heads_drug,
-                                 args.transformer_attention_probs_dropout,
-                                 args.transformer_hidden_dropout_rate)
+                                      args.transformer_emb_size_drug,
+                                      args.dropout,
+                                      args.transformer_n_layer_drug,
+                                      args.transformer_intermediate_size_drug,
+                                      args.transformer_num_attention_heads_drug,
+                                      args.transformer_attention_probs_dropout,
+                                      args.transformer_hidden_dropout_rate)
         self.device = torch.device('cuda:0')
         self.modeldir = modeldir
         self.record_file = os.path.join(
@@ -193,10 +193,10 @@ class DeepTTC:
         model_gene = MLP(input_dim=np.shape(train_rna)[1])
         self.model = Classifier(self.args, self.model_drug, model_gene)
 
-        lr = 1e-4
+        lr = self.learning_rate
         decay = 0
-        BATCH_SIZE = 64
-        train_epoch = 3
+        BATCH_SIZE = self.args.batch_size
+        train_epoch = self.args.epochs
         self.model = self.model.to(self.device)
         # self.model = torch.nn.DataParallel(self.model, device_ids=[0, 5])
         opt = torch.optim.Adam(self.model.parameters(),
@@ -228,6 +228,14 @@ class DeepTTC:
         t_start = time.time()
         iteration_loss = 0
 
+        ckpt = candle.CandleCkptPyTorch(params)
+        ckpt.set_model({"model": self.model, "optimizer": opt})
+        J = ckpt.restart(self.model)
+        if J is not None:
+            initial_epoch = J["epoch"]
+        print("restarting from ckpt: initial_epoch: %i" % initial_epoch)
+
+        train_loss = None
         for epo in range(train_epoch):
             for i, (v_d, v_p, label) in enumerate(training_generator):
                 # print(v_d,v_p)
@@ -246,12 +254,15 @@ class DeepTTC:
                 opt.zero_grad()
                 loss.backward()
                 opt.step()
+                train_loss = str(loss.cpu().detach().numpy())[:7]
                 if (i % 1000 == 0):
                     t_now = time.time()
                     print('Training at Epoch ' + str(epo + 1) +
                           ' iteration ' + str(i) +
-                          ' with loss ' + str(loss.cpu().detach().numpy())[:7] +
+                          ' with loss ' + train_loss +
                           ". Total time " + str(int(t_now - t_start) / 3600)[:7] + " hours")
+
+            ckpt.ckpt_epoch(epo, train_loss)
 
             with torch.set_grad_enabled(False):
                 # regression: MSE, Pearson Correlation, with p-value, Concordance Index
@@ -325,10 +336,10 @@ class DeepTTC:
 
         self.model.load_state_dict(state_dict)
 
-
     def preprocess(self, rna_data, drug_data, response_data, response_metric='AUC'):
         args = self.args
-        obj = DataEncoding(args.vocab_dir, args.cancer_id, args.sample_id, args.target_id, args.drug_id)
+        obj = DataEncoding(args.vocab_dir, args.cancer_id,
+                           args.sample_id, args.target_id, args.drug_id)
         drug_smiles = drug_data
 
         drugid2smile = dict(
@@ -346,13 +357,14 @@ class DeepTTC:
 
         response_data = response_data[['CancID', 'DrugID', response_metric]]
         response_data.columns = ['CancID', 'DrugID', 'Label']
-        drug_data = pd.merge(response_data, drug_data, on='DrugID', how='inner')
+        drug_data = pd.merge(response_data, drug_data,
+                             on='DrugID', how='inner')
         #drug_data['Label'] = response_data['AUC']
 
         #response_data = response_data[['CancID', 'DrugID', response_metric]]
         #response_data.columns = ['CancID', 'DrugID', 'Label']
         #response_data = response_data[['CancID', 'DrugID']]
-       
+
         #rna_data = pd.merge(response_data, rna_data, on='CancID', how='inner')
         #train_rnadata = train_rnadata.T
         drug_data.index = range(drug_data.shape[0])
@@ -360,8 +372,9 @@ class DeepTTC:
 
         print('Preprocessing...!!!')
         print(np.shape(rna_data), np.shape(drug_data))
-        #print(list(rna_data.columns))
+        # print(list(rna_data.columns))
         return rna_data, drug_data
+
 
 if __name__ == '__main__':
 

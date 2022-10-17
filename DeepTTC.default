@@ -31,6 +31,7 @@ transformer_attention_probs_dropout = 0.1
 transformer_hidden_dropout_rate = 0.1
 learning_rate = 0.3
 batch_size = 8
+epochs = 3
 
 input_dim_drug_classifier = 128
 input_dim_gene_classifier = 256
