@@ -189,7 +189,7 @@ def initialize_parameters(default_model='DeepTTC.default'):
     for directory in dirs_to_check:
         path = os.path.join(candle_data_dir, directory)
         if not os.path.exists(path):
-            os.mkdir(path)
+            os.makedirs(path)
 
     return gParameters
 
