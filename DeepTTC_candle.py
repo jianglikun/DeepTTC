@@ -140,6 +140,7 @@ class DeepTTCCandle(candle.Benchmark):
 
 def process_data(args):
     train_drug = test_drug = train_rna = test_rna = None
+
     if not os.path.exists(args.train_data_rna) or \
             not os.path.exists(args.test_data_rna) or \
             args.generate_input_data:
@@ -176,12 +177,19 @@ def initialize_parameters(default_model='DeepTTC.default'):
                            desc='DeepTTC drug response prediction model')
 
     # Initialize parameters
+    candle_data_dir = os.getenv("CANDLE_DATA_DIR")
     gParameters = candle.finalize_parameters(common)
+    relative_paths = ['train_data_rna', 'test_data_rna',
+                      'vocab_dir', 'train_data_drug', 'test_data_drug']
+
+    for path in relative_paths:
+        gParameters[path] = os.path.join(candle_data_dir, gParameters[path])
 
     dirs_to_check = ['input', 'results']
     for directory in dirs_to_check:
-        if not os.path.exists(directory):
-            os.mkdir(directory)
+        path = os.path.join(candle_data_dir, directory)
+        if not os.path.exists(path):
+            os.mkdir(path)
 
     return gParameters
 
@@ -192,13 +200,17 @@ def get_model(args):
 
 
 def download_gdsc(url):
-    OUT_DIR = 'GDSC_data'
+    candle_data_dir = os.getenv("CANDLE_DATA_DIR")
+    if candle_data_dir is None:
+        candle_data_dir = '.'
+
+    OUT_DIR = os.path.join(candle_data_dir, 'GDSC_data')
     url_length = len(url.split('/'))-4
     if not os.path.isdir(OUT_DIR):
         os.mkdir(OUT_DIR)
     subprocess.run(['wget', '--recursive', '--no-clobber', '-nH',
                    f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
-    #wget.download(url, out=OUT_DIR)
+    # wget.download(url, out=OUT_DIR)
 
 
 def run(args):
