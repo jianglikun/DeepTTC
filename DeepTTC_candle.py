@@ -180,7 +180,8 @@ def initialize_parameters(default_model='DeepTTC.default'):
     candle_data_dir = os.getenv("CANDLE_DATA_DIR")
     gParameters = candle.finalize_parameters(common)
     relative_paths = ['train_data_rna', 'test_data_rna',
-                      'vocab_dir', 'train_data_drug', 'test_data_drug']
+                      'vocab_dir', 'train_data_drug', 'test_data_drug',
+                      'output_dir']
 
     for path in relative_paths:
         gParameters[path] = os.path.join(candle_data_dir, gParameters[path])
