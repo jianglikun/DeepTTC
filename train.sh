@@ -23,10 +23,10 @@ if [ ! -z "${CANDLE_CONFIG}" ]; then
             echo "Cannot read configuration file! If you want to run model with default parameters leave third option empty."
 			exit -1
 		else
-			CMD="python ${CANDLE_MODEL} --config_file ${CANDLE_CONFIG}"
+			CMD="python3 ${CANDLE_MODEL} --config_file ${CANDLE_CONFIG}"
         fi
 else
-	CMD="python ${CANDLE_MODEL}"
+	CMD="python3 ${CANDLE_MODEL}"
 fi
 
 
