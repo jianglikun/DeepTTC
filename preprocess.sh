@@ -13,7 +13,7 @@ if [[ "$#" -ne 1 ]] ; then
 	    #CANDLE_CONFIG=$2
 
 	    #CMD="python ${CANDLE_PREPROCESS} --config_file ${CANDLE_CONFIG}"
-	    CMD="python# ${CANDLE_PREPROCESS}"
+	    CMD="python3 ${CANDLE_PREPROCESS}"
 
 	    echo "using CANDLE_DATA_DIR ${CANDLE_DATA_DIR}"
 	    echo "using CANDLE_CONFIG ${CANDLE_CONFIG}"
