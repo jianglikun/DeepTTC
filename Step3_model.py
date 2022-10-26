@@ -33,7 +33,7 @@ from model_helper import Encoder_MultipleLayers, Embeddings
 from Step2_DataEncoding import DataEncoding
 import candle
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 
 
 class data_process_loader(data.Dataset):
@@ -70,7 +70,8 @@ class transformer(nn.Sequential):
                  transformer_intermediate_size_drug,
                  transformer_num_attention_heads_drug,
                  transformer_attention_probs_dropout,
-                 transformer_hidden_dropout_rate):
+                 transformer_hidden_dropout_rate,
+                 device):
         super(transformer, self).__init__()
 
         self.emb = Embeddings(input_dim_drug,
@@ -84,10 +85,12 @@ class transformer(nn.Sequential):
                                               transformer_num_attention_heads_drug,
                                               transformer_attention_probs_dropout,
                                               transformer_hidden_dropout_rate)
+        
+        self.device = device
 
     def forward(self, v):
-        e = v[0].long().to(device)
-        e_mask = v[1].long().to(device)
+        e = v[0].long().to(self.device)
+        e_mask = v[1].long().to(self.device)
         ex_e_mask = e_mask.unsqueeze(1).unsqueeze(2)
         ex_e_mask = (1.0 - ex_e_mask) * -10000.0
 
@@ -97,7 +100,7 @@ class transformer(nn.Sequential):
 
 
 class MLP(nn.Sequential):
-    def __init__(self, input_dim):
+    def __init__(self, input_dim, device):
         input_dim_gene = input_dim
         hidden_dim_gene = 256
         mlp_hidden_dims_gene = [1024, 256, 64]
@@ -106,10 +109,11 @@ class MLP(nn.Sequential):
         dims = [input_dim_gene] + mlp_hidden_dims_gene + [hidden_dim_gene]
         self.predictor = nn.ModuleList(
             [nn.Linear(dims[i], dims[i + 1]) for i in range(layer_size)])
+        self.device = device
 
     def forward(self, v):
         # predict
-        v = v.float().to(device)
+        v = v.float().to(self.device)
         for i, l in enumerate(self.predictor):
             v = F.relu(l(v))
         return v
@@ -146,6 +150,12 @@ class Classifier(nn.Sequential):
 
 class DeepTTC:
     def __init__(self, modeldir, args):
+        devices_list = os.getenv('CUDA_AVAILABLE_DEVICES')
+        #device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        if devices_list is None:
+            devices_list = '0'
+        self.device = torch.device(f'cuda:{devices_list}' if torch.cuda.is_available() else 'cpu')
+
         self.model_drug = transformer(args.input_dim_drug,
                                       args.transformer_emb_size_drug,
                                       args.dropout,
@@ -153,8 +163,8 @@ class DeepTTC:
                                       args.transformer_intermediate_size_drug,
                                       args.transformer_num_attention_heads_drug,
                                       args.transformer_attention_probs_dropout,
-                                      args.transformer_hidden_dropout_rate)
-        self.device = torch.device('cuda:0')
+                                      args.transformer_hidden_dropout_rate,
+                                      device=self.device)
         self.modeldir = modeldir
         self.record_file = os.path.join(
             self.modeldir, "valid_markdowntable.txt")
@@ -190,7 +200,7 @@ class DeepTTC:
             loss
 
     def train(self, train_drug, train_rna, val_drug, val_rna):
-        model_gene = MLP(input_dim=np.shape(train_rna)[1])
+        model_gene = MLP(input_dim=np.shape(train_rna)[1], device=self.device)
         self.model = Classifier(self.args, self.model_drug, model_gene)
 
         lr = self.args.learning_rate
@@ -297,7 +307,7 @@ class DeepTTC:
 
     def predict(self, drug_data, rna_data):
         print('predicting...')
-        self.model.to(device)
+        self.model.to(self.device)
         info = data_process_loader(drug_data.index.values,
                                    drug_data.Label.values,
                                    drug_data, rna_data)

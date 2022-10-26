@@ -11,6 +11,11 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 
 additional_definitions = [
     {
+        "name": "save_data",
+        "type": bool,
+        "help": "Whether to save loaded data in pickle files",
+    },
+    {
         "name": "use_lincs",
         "type": bool,
         "help": "Whether to use a LINCS subset of genes ONLY",
@@ -138,34 +143,66 @@ class DeepTTCCandle(candle.Benchmark):
             self.additional_definitions = additional_definitions
 
 
-def process_data(args):
-    train_drug = test_drug = train_rna = test_rna = None
+class DataLoader:
+    args = None
 
-    if not os.path.exists(args.train_data_rna) or \
-            not os.path.exists(args.test_data_rna) or \
-            args.generate_input_data:
-        obj = DataEncoding(args.vocab_dir, args.cancer_id,
-                           args.sample_id, args.target_id, args.drug_id)
-        train_drug, test_drug = obj.Getdata.ByCancer(random_seed=args.rng_seed)
+    def __init__(self, args):
+        self.args = args
+    
+    def load_data(self):
+        train_drug, test_drug, train_rna, test_rna = self._process_data(self.args)
+        return train_drug, test_drug, train_rna, test_rna
 
-        train_drug, train_rna, test_drug, test_rna = obj.encode(
-            traindata=train_drug,
-            testdata=test_drug)
-        print('Train Drug:')
-        print(train_drug)
-        print('Train RNA:')
-        print(train_rna)
-
+    def save_data(self, train_drug, test_drug, train_rna, test_rna):
+        args = self.args
         pickle.dump(train_drug, open(args.train_data_drug, 'wb'), protocol=4)
         pickle.dump(test_drug, open(args.test_data_drug, 'wb'), protocol=4)
         pickle.dump(train_rna, open(args.train_data_rna, 'wb'), protocol=4)
         pickle.dump(test_rna, open(args.test_data_rna, 'wb'), protocol=4)
-    else:
-        train_drug = pickle.load(open(args.train_data_drug, 'rb'))
-        test_drug = pickle.load(open(args.test_data_drug, 'rb'))
-        train_rna = pickle.load(open(args.train_data_rna, 'rb'))
-        test_rna = pickle.load(open(args.test_data_rna, 'rb'))
-    return train_drug, test_drug, train_rna, test_rna
+
+    def _download_default_dataset(default_data_url):
+        url = default_data_url
+        candle_data_dir = os.getenv("CANDLE_DATA_DIR")
+        if candle_data_dir is None:
+            candle_data_dir = '.'
+
+        OUT_DIR = os.path.join(candle_data_dir, 'GDSC_data')
+        url_length = len(url.split('/'))-4
+        if not os.path.isdir(OUT_DIR):
+            os.mkdir(OUT_DIR)
+        subprocess.run(['wget', '--recursive', '--no-clobber', '-nH',
+                   f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
+        # wget.download(url, out=OUT_DIR)
+
+    def _process_data(self, args):
+        train_drug = test_drug = train_rna = test_rna = None
+
+        if not os.path.exists(args.train_data_rna) or \
+                not os.path.exists(args.test_data_rna) or \
+                args.generate_input_data:
+
+            self._download_default_dataset(args.default_data_url)
+
+            obj = DataEncoding(args.vocab_dir, args.cancer_id,
+                               args.sample_id, args.target_id, args.drug_id)
+            train_drug, test_drug = obj.Getdata.ByCancer(random_seed=args.rng_seed)
+
+            train_drug, train_rna, test_drug, test_rna = obj.encode(
+                traindata=train_drug,
+                testdata=test_drug)
+            print('Train Drug:')
+            print(train_drug)
+            print('Train RNA:')
+            print(train_rna)
+
+            if args.save_data:
+                self.save_data(train_drug, test_drug, train_rna, test_rna)
+        else:
+            train_drug = pickle.load(open(args.train_data_drug, 'rb'))
+            test_drug = pickle.load(open(args.test_data_drug, 'rb'))
+            train_rna = pickle.load(open(args.train_data_rna, 'rb'))
+            test_rna = pickle.load(open(args.test_data_rna, 'rb'))
+        return train_drug, test_drug, train_rna, test_rna
 
 
 def initialize_parameters(default_model='DeepTTC.default'):
@@ -200,23 +237,9 @@ def get_model(args):
     return net
 
 
-def download_gdsc(url):
-    candle_data_dir = os.getenv("CANDLE_DATA_DIR")
-    if candle_data_dir is None:
-        candle_data_dir = '.'
-
-    OUT_DIR = os.path.join(candle_data_dir, 'GDSC_data')
-    url_length = len(url.split('/'))-4
-    if not os.path.isdir(OUT_DIR):
-        os.mkdir(OUT_DIR)
-    subprocess.run(['wget', '--recursive', '--no-clobber', '-nH',
-                   f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
-    # wget.download(url, out=OUT_DIR)
-
-
 def run(args):
-    download_gdsc(args.default_data_url)
-    train_drug, test_drug, train_rna, test_rna = process_data(args)
+    loader = DataLoader(args)
+    train_drug, test_drug, train_rna, test_rna = loader.load_data()
     modeldir = args.output_dir
     modelfile = os.path.join(modeldir, args.model_name)
     if not os.path.exists(modeldir):

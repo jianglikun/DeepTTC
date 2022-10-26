@@ -9,6 +9,8 @@ drug_id = 'DRUG_ID'
 target_id = 'LN_IC50'
 sample_id = 'COSMIC_ID'
 
+save_data = 'True'
+predictions_output = 'output/results.tsv'
 train_data_drug = 'input/train_data_drug.pickle'
 test_data_drug = 'input/test_data_drug.pickle'
 train_data_rna = 'input/train_data_rna.pickle'
@@ -20,6 +22,7 @@ output_dir = 'Model_80'
 model_name = 'model.pt'
 rng_seed=1
 vocab_dir = 'GDSC_data'
+
 
 input_dim_drug = 2586
 transformer_emb_size_drug = 128
