@@ -11,8 +11,8 @@ if [[ "$#" < 2  ]] ; then
 	    exit -1
 fi
 
-CUDA_VISIBLE_DEVICES=$1
-CANDLE_DATA_DIR=$2
+CUDA_VISIBLE_DEVICES=$1; shift
+CANDLE_DATA_DIR=$1; shift
 CMD="python3 ${CANDLE_MODEL} $@"
 
 
