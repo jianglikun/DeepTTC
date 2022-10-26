@@ -160,7 +160,7 @@ class DataLoader:
         pickle.dump(train_rna, open(args.train_data_rna, 'wb'), protocol=4)
         pickle.dump(test_rna, open(args.test_data_rna, 'wb'), protocol=4)
 
-    def _download_default_dataset(default_data_url):
+    def _download_default_dataset(self, default_data_url):
         url = default_data_url
         candle_data_dir = os.getenv("CANDLE_DATA_DIR")
         if candle_data_dir is None:
