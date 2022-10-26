@@ -5,7 +5,7 @@
 # arg 3 CANDLE_CONFIG
 
 CANDLE_MODEL=/DeepTTC/DeepTTC_candle.py
-if [[ "$#" -le 2  ]] ; then
+if [[ "$#" < 2  ]] ; then
 	    echo "Illegal number of parameters"
 	    echo "CUDA_VISIBLE_DEVICES CANDLE_DATA_DIR are required"
 	    exit -1
