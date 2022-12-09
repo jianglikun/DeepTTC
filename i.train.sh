@@ -10,7 +10,7 @@
 # arg 3 CANDLE_CONFIG
 
 ### Path to your CANDLEized model's main Python script###
-CANDLE_MODEL=/usr/local/DeepTTC/DeepTTC_candle.py
+CANDLE_MODEL=/DeepTTC/DeepTTC_candle.py
 
 if [ $# -lt 2 ] ; then
         echo "Illegal number of parameters"
