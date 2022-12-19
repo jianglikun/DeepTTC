@@ -49,4 +49,6 @@ echo "using CANDLE_CONFIG ${CANDLE_CONFIG}"
 echo "running command ${CMD}"
 
 # Set up environmental variables and execute model
-CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} CANDLE_DATA_DIR=${CANDLE_DATA_DIR} $CMD
+export CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES} 
+export CANDLE_DATA_DIR=${CANDLE_DATA_DIR} 
+$CMD
