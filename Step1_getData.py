@@ -25,7 +25,10 @@ import zipfile
 
 class GetData():
     def __init__(self, cancer_id, sample_id, target_id, drug_id, generate_smiles=True):
-        PATH = './GDSC_data'
+        candle_data_dir = os.getenv('CANDLE_DATA_DIR')
+        if candle_data_dir is None:
+            candle_data_dir = '.'
+        PATH = os.path.join(candle_data_dir, 'GDSC_data')
 
         rnafile = PATH + '/Cell_line_RMA_proc_basalExp.txt'
         smilefile = PATH + '/smile_inchi.csv'
