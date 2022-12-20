@@ -248,7 +248,7 @@ class DeepTTC:
             print("restarting from ckpt: initial_epoch: %i" % initial_epoch)
 
         train_loss = None
-        for epo in range(train_epoch):
+        for epo in np.arange(initial_epoch, train_epoch):
             for i, (v_d, v_p, label) in enumerate(training_generator):
                 # print(v_d,v_p)
                 #v_d = v_d.float().to(self.device)

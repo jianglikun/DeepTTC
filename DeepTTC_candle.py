@@ -167,7 +167,9 @@ class DataLoader:
             candle_data_dir = '.'
 
         import shutil
-        shutil.copy('landmark_genes', candle_data_dir)
+        import pathlib
+        cwd = os.path.dirname(os.path.abspath(__file__))
+        shutil.copy(f'{cwd}/landmark_genes', candle_data_dir)
         
         OUT_DIR = os.path.join(candle_data_dir, 'GDSC_data')
         url_length = len(url.split('/'))-4
