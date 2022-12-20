@@ -24,15 +24,20 @@ if [ $# -eq 2 ] ; then
 	CANDLE_DATA_DIR=$1 ; shift
 	CMD="python ${CANDLE_MODEL}"
 	echo "CMD = $CMD"
+elif [ $# -eq 3 ] ; then
+	CUDA_VISIBLE_DEVICES=$1 ; shift
+	CANDLE_DATA_DIR=$1 ; shift
+	CMD="python ${CANDLE_MODEL} --config_file $1"; shift
+	echo "CMD = $CMD"
 
 else
-        CUDA_VISIBLE_DEVICES=$1 ; shift
-        CANDLE_DATA_DIR=$1 ; shift
-
+    CUDA_VISIBLE_DEVICES=$1 ; shift
+    CANDLE_DATA_DIR=$1 ; shift
+	CONFIG_PATH=${CANDLE_DATA_DIR}/$1
 	# if third arg is a file, then set --config_file
-	if [ -f $1 ] ; then
+	if [ -f "$CONFIG_PATH" ] ; then
   		CANDLE_CONFIG=$1 ; shift
-  		CMD="python ${CANDLE_MODEL} --config_file $CANDLE_CONFIG $@"
+  		CMD="python ${CANDLE_MODEL} --config_file $CONFIG_PATH $@"
   		echo "CMD = $CMD $@"
 
 	# else don't set --config_file
