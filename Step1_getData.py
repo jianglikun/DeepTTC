@@ -25,7 +25,10 @@ import zipfile
 
 class GetData():
     def __init__(self, cancer_id, sample_id, target_id, drug_id, generate_smiles=True):
-        PATH = './GDSC_data'
+        candle_data_dir = os.getenv('CANDLE_DATA_DIR')
+        if candle_data_dir is None:
+            candle_data_dir = '.'
+        PATH = os.path.join(candle_data_dir, 'GDSC_data')
 
         rnafile = PATH + '/Cell_line_RMA_proc_basalExp.txt'
         smilefile = PATH + '/smile_inchi.csv'
@@ -548,7 +551,7 @@ class GetData():
 
         return train_data, test_data
 
-    def getRna(self, traindata, testdata):
+    def getRna(self, traindata, testdata, args=None):
         train_rnaid = list(traindata[self.sample_id])
         test_rnaid = list(testdata[self.sample_id])
         train_rnaid = ['DATA.'+str(i) for i in train_rnaid]
@@ -560,7 +563,25 @@ class GetData():
             with zipfile.ZipFile(rna_zip, "r") as zip_ref:
                 zip_ref.extractall(self.PATH)
 
-        rnadata = pd.read_csv(self.rnafile, sep='\t')
+        rnadata = pd.read_csv(self.rnafile, sep='\t', index_col=0)
+        print('ORIGINAL DATA')
+        print(rnadata)
+
+        if args is not None:
+            if args.use_lincs:
+                with open(f"{args.candle_data_dir}/landmark_genes") as f:
+                    genes = [str(line.rstrip()) for line in f]
+                #genes = ["ge_" + str(g) for g in genes]
+                print('Genes!!!')
+                print(genes)
+                print('Train RNA Columns!!!')
+                genes_index = rnadata.index #['GENE_SYMBOLS']
+                print(genes_index)
+                print(len(set(genes).intersection(set(genes_index))))
+                genes = list(set(genes).intersection(set(genes_index)))
+                rnadata = rnadata.loc[genes]
+                
+
         train_rnadata = rnadata[train_rnaid]
         test_rnadata = rnadata[test_rnaid]
 

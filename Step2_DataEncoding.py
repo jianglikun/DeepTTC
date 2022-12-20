@@ -49,7 +49,7 @@ class DataEncoding:
 
         return i, np.asarray(input_mask)
 
-    def encode(self, traindata, testdata):
+    def encode(self, traindata, testdata, args=None):
         drug_smiles = self.Getdata.getDrug()
         print(drug_smiles)
         drugid2smile = dict(
@@ -66,17 +66,31 @@ class DataEncoding:
         testdata['drug_encoding'] = [uniq_smile_dict[i]
                                      for i in testdata['smiles']]
         traindata = traindata.reset_index()
-        traindata['Label'] = traindata['LN_IC50']
+        traindata['Label'] = traindata[args.target_id]
         testdata = testdata.reset_index()
-        testdata['Label'] = testdata['LN_IC50']
+        testdata['Label'] = testdata[args.target_id]
 
         train_rnadata, test_rnadata = self.Getdata.getRna(
             traindata=traindata,
-            testdata=testdata)
+            testdata=testdata,
+            args=args)
+
+        cols = train_rnadata.index
+
+        print('TRAIN RNA DATA')
+        print(train_rnadata)
+        print('TRAIN RNA DATA IDX')
+        print(cols)
+ 
+
         train_rnadata = train_rnadata.T
+        train_rnadata.columns = cols
         test_rnadata = test_rnadata.T
+        test_rnadata.columns = cols
+
         train_rnadata.index = range(train_rnadata.shape[0])
         test_rnadata.index = range(test_rnadata.shape[0])
+
 
         return traindata, train_rnadata, testdata, test_rnadata
 

@@ -18,6 +18,7 @@ from scipy.stats import pearsonr, spearmanr
 import copy
 import time
 import pickle
+import json
 
 import torch
 from torch.utils import data
@@ -223,7 +224,7 @@ class DeepTTC:
             val_drug.index.values, val_drug.Label.values, val_drug, val_rna), **params)
         print(training_generator)
 
-        max_MSE = 10000
+        max_MSE = 1e31
         model_max = copy.deepcopy(self.model)
 
         valid_metric_record = []
@@ -231,6 +232,7 @@ class DeepTTC:
                                "Pearson Correlation", "with p-value",
                                'Spearman Correlation', "with p-value2",
                                "Concordance Index"]
+        scores = {'val_loss': 10000000, 'rmse': 1000000, 'pcc': 0, 'scc': 0}
         table = PrettyTable(valid_metric_header)
         def float2str(x): return '%0.4f' % x
         print('--- Go for Training ---')
@@ -246,7 +248,7 @@ class DeepTTC:
             print("restarting from ckpt: initial_epoch: %i" % initial_epoch)
 
         train_loss = None
-        for epo in range(train_epoch):
+        for epo in np.arange(initial_epoch, train_epoch):
             for i, (v_d, v_p, label) in enumerate(training_generator):
                 # print(v_d,v_p)
                 #v_d = v_d.float().to(self.device)
@@ -277,23 +279,29 @@ class DeepTTC:
             with torch.set_grad_enabled(False):
                 # regression: MSE, Pearson Correlation, with p-value, Concordance Index
                 y_true, y_pred, mse, rmse, \
-                    person, p_val, \
+                    pearson, p_val, \
                     spearman, s_p_val, CI,\
                     loss_val = self.test(validation_generator, self.model)
-                lst = ["epoch " + str(epo)] + list(map(float2str, [mse, rmse, person, p_val, spearman,
+                lst = ["epoch " + str(epo)] + list(map(float2str, [mse, rmse, pearson, p_val, spearman,
                                                                    s_p_val, CI]))
                 valid_metric_record.append(lst)
+                print(f'Currenf MSE: {mse}')
                 if mse < max_MSE:
                     model_max = copy.deepcopy(self.model)
                     max_MSE = mse
                     print('Validation at Epoch ' + str(epo + 1) +
                           ' with loss:' + str(loss_val.item())[:7] +
                           ', MSE: ' + str(mse)[:7] +
-                          ' , Pearson Correlation: ' + str(person)[:7] +
+                          ' , Pearson Correlation: ' + str(pearson)[:7] +
                           ' with p-value: ' + str(p_val)[:7] +
                           ' Spearman Correlation: ' + str(spearman)[:7] +
                           ' with p_value: ' + str(s_p_val)[:7] +
                           ' , Concordance Index: ' + str(CI)[:7])
+                    scores['val_loss'] = loss_val.item()
+                    scores['rmse'] = rmse
+                    scores['pcc'] = pearson
+                    scores['scc'] = spearman
+                    print(scores)
             table.add_row(lst)
 
         self.model = model_max
@@ -302,6 +310,14 @@ class DeepTTC:
             fp.write(table.get_string())
         with open(self.pkl_file, 'wb') as pck:
             pickle.dump(loss_history, pck)
+
+        print("\nIMPROVE_RESULT val_loss:\t{}\n".format(scores["val_loss"]))
+        print("IMPROVE_RESULT pcc:\t{}\n".format(scores["pcc"]))
+        print("IMPROVE_RESULT scc:\t{}\n".format(scores["scc"]))
+        print("IMPROVE_RESULT rmse:\t{}\n".format(scores["rmse"]))
+
+        with open(os.path.join(self.args.output_dir, "scores.json"), "w", encoding="utf-8") as f:
+            json.dump(scores, f, ensure_ascii=False, indent=4)
 
         print('--- Training Finished ---')
 

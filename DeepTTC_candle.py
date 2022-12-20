@@ -166,6 +166,11 @@ class DataLoader:
         if candle_data_dir is None:
             candle_data_dir = '.'
 
+        import shutil
+        import pathlib
+        cwd = os.path.dirname(os.path.abspath(__file__))
+        shutil.copy(f'{cwd}/landmark_genes', candle_data_dir)
+        
         OUT_DIR = os.path.join(candle_data_dir, 'GDSC_data')
         url_length = len(url.split('/'))-4
         if not os.path.isdir(OUT_DIR):
@@ -189,7 +194,9 @@ class DataLoader:
 
             train_drug, train_rna, test_drug, test_rna = obj.encode(
                 traindata=train_drug,
-                testdata=test_drug)
+                testdata=test_drug,
+                args=args)
+
             print('Train Drug:')
             print(train_drug)
             print('Train RNA:')
@@ -223,12 +230,13 @@ def initialize_parameters(default_model='DeepTTC.default'):
     for path in relative_paths:
         gParameters[path] = os.path.join(candle_data_dir, gParameters[path])
 
-    dirs_to_check = ['input', 'results']
+    dirs_to_check = ['input', 'results', gParameters['output_dir']]
     for directory in dirs_to_check:
         path = os.path.join(candle_data_dir, directory)
         if not os.path.exists(path):
             os.makedirs(path)
 
+    gParameters['candle_data_dir'] = candle_data_dir
     return gParameters
 
 
