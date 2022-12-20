@@ -243,6 +243,7 @@ class DeepTTC:
         ckpt = candle.CandleCkptPyTorch(vars(self.args))
         ckpt.set_model({"model": self.model, "optimizer": opt})
         J = ckpt.restart(self.model)
+        initial_epoch = 0
         if J is not None:
             initial_epoch = J["epoch"]
             print("restarting from ckpt: initial_epoch: %i" % initial_epoch)

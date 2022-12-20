@@ -214,6 +214,8 @@ class DataLoader:
 
 def initialize_parameters(default_model='DeepTTC.default'):
     # Build benchmark object
+    candle_data_dir = os.getenv("CANDLE_DATA_DIR")
+    #default_model = os.path.join(candle_data_dir, default_model)
     common = DeepTTCCandle(file_path,
                            default_model,
                            'torch',
@@ -221,7 +223,6 @@ def initialize_parameters(default_model='DeepTTC.default'):
                            desc='DeepTTC drug response prediction model')
 
     # Initialize parameters
-    candle_data_dir = os.getenv("CANDLE_DATA_DIR")
     gParameters = candle.finalize_parameters(common)
     relative_paths = ['train_data_rna', 'test_data_rna',
                       'vocab_dir', 'train_data_drug', 'test_data_drug',
