@@ -171,7 +171,7 @@ class DataLoader:
         args.test_data_rna = os.path.join(args.data_dir, 'test_data_rna.pickle')
 
         self.args = args
-        
+
         if not os.path.exists(args.train_data_rna) or \
                 not os.path.exists(args.test_data_rna) or \
                 args.generate_input_data:
@@ -214,8 +214,7 @@ def initialize_parameters(default_model='DeepTTC.default'):
 
     # Initialize parameters
     gParameters = candle.finalize_parameters(common)
-    relative_paths = ['train_data_rna', 'test_data_rna',
-                      'vocab_dir', 'train_data_drug', 'test_data_drug',
+    relative_paths = ['vocab_dir', 
                       'output_dir']
 
     for path in relative_paths:
