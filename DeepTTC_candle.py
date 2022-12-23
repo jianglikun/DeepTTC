@@ -220,6 +220,8 @@ def initialize_parameters(default_model='DeepTTC.default'):
     for path in relative_paths:
         gParameters[path] = os.path.join(candle_data_dir, gParameters[path])
 
+    if 'data_dir' not in gParameters:
+        gParameters['data_dir'] = candle_data_dir
     dirs_to_check = ['results', gParameters['output_dir'], gParameters['data_dir']]
     for directory in dirs_to_check:
         path = os.path.join(candle_data_dir, directory)
