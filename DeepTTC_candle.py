@@ -135,10 +135,6 @@ class DataLoader:
 
     def save_data(self, train_drug, test_drug, train_rna, test_rna):
         args = self.args
-        args.train_data_drug = os.path.join(args.data_dir, 'train_data_drug.pickle')
-        args.test_data_drug = os.path.join(args.data_dir, 'test_data_drug.pickle')
-        args.train_data_rna = os.path.join(args.data_dir, 'train_data_rna.pickle')
-        args.test_data_rna = os.path.join(args.data_dir, 'test_data_rna.pickle')
 
         pickle.dump(train_drug, open(args.train_data_drug, 'wb'), protocol=4)
         pickle.dump(test_drug, open(args.test_data_drug, 'wb'), protocol=4)
@@ -168,7 +164,14 @@ class DataLoader:
 
     def _process_data(self, args):
         train_drug = test_drug = train_rna = test_rna = None
+        
+        args.train_data_drug = os.path.join(args.data_dir, 'train_data_drug.pickle')
+        args.test_data_drug = os.path.join(args.data_dir, 'test_data_drug.pickle')
+        args.train_data_rna = os.path.join(args.data_dir, 'train_data_rna.pickle')
+        args.test_data_rna = os.path.join(args.data_dir, 'test_data_rna.pickle')
 
+        self.args = args
+        
         if not os.path.exists(args.train_data_rna) or \
                 not os.path.exists(args.test_data_rna) or \
                 args.generate_input_data:
