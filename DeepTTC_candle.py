@@ -61,26 +61,6 @@ additional_definitions = [
         "help": "Column name for target",
     },
     {
-        "name": "train_data_drug",
-        "type": str,
-        "help": "Drug data for training",
-    },
-    {
-        "name": "test_data_drug",
-        "type": str,
-        "help": "Drug data for testing",
-    },
-    {
-        "name": "train_data_rna",
-        "type": str,
-        "help": "RNA data for training",
-    },
-    {
-        "name": "test_data_rna",
-        "type": str,
-        "help": "RNA data for testing",
-    },
-    {
         "name": "vocab_dir",
         "type": str,
         "help": "Directory with ESPF vocabulary",
@@ -155,10 +135,17 @@ class DataLoader:
 
     def save_data(self, train_drug, test_drug, train_rna, test_rna):
         args = self.args
+        args.train_data_drug = os.path.join(args.data_dir, 'train_data_drug.pickle')
+        args.test_data_drug = os.path.join(args.data_dir, 'test_data_drug.pickle')
+        args.train_data_rna = os.path.join(args.data_dir, 'train_data_rna.pickle')
+        args.test_data_rna = os.path.join(args.data_dir, 'test_data_rna.pickle')
+
         pickle.dump(train_drug, open(args.train_data_drug, 'wb'), protocol=4)
         pickle.dump(test_drug, open(args.test_data_drug, 'wb'), protocol=4)
         pickle.dump(train_rna, open(args.train_data_rna, 'wb'), protocol=4)
         pickle.dump(test_rna, open(args.test_data_rna, 'wb'), protocol=4)
+
+        self.args = args
 
     def _download_default_dataset(self, default_data_url):
         url = default_data_url
@@ -231,7 +218,7 @@ def initialize_parameters(default_model='DeepTTC.default'):
     for path in relative_paths:
         gParameters[path] = os.path.join(candle_data_dir, gParameters[path])
 
-    dirs_to_check = ['input', 'results', gParameters['output_dir']]
+    dirs_to_check = ['results', gParameters['output_dir'], gParameters['data_dir']]
     for directory in dirs_to_check:
         path = os.path.join(candle_data_dir, directory)
         if not os.path.exists(path):

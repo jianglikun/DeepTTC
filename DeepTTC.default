@@ -11,15 +11,11 @@ sample_id = 'COSMIC_ID'
 
 save_data = 'True'
 predictions_output = 'output/results.tsv'
-train_data_drug = 'input/train_data_drug.pickle'
-test_data_drug = 'input/test_data_drug.pickle'
-train_data_rna = 'input/train_data_rna.pickle'
-test_data_rna = 'input/test_data_rna.pickle'
 
 default_data_url = 'https://ftp.mcs.anl.gov/pub/candle/public/improve/reproducability/DeepTTC/'
 benchmark_dir = '/root/git/ModelTesting/benchmark/IMP_data'
 output_dir = 'output'
-model_name = 'model.pt'
+model_name = 'DeepTTC'
 rng_seed=1
 vocab_dir = 'GDSC_data'
 
