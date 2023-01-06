@@ -145,16 +145,17 @@ class DataLoader:
 
     def _download_default_dataset(self, default_data_url):
         url = default_data_url
-        candle_data_dir = os.getenv("CANDLE_DATA_DIR")
-        if candle_data_dir is None:
-            candle_data_dir = '.'
+        #candle_data_dir = os.getenv("CANDLE_DATA_DIR")
+        #if candle_data_dir is None:
+        #    candle_data_dir = '.'
+        data_dir = self.args.data_dir
 
         import shutil
         import pathlib
         cwd = os.path.dirname(os.path.abspath(__file__))
-        shutil.copy(f'{cwd}/landmark_genes', candle_data_dir)
+        shutil.copy(f'{cwd}/landmark_genes', data_dir)
         
-        OUT_DIR = os.path.join(candle_data_dir, 'GDSC_data')
+        OUT_DIR = os.path.join(data_dir, 'GDSC_data')
         url_length = len(url.split('/'))-4
         if not os.path.isdir(OUT_DIR):
             os.mkdir(OUT_DIR)
