@@ -1,5 +1,6 @@
 [Global_Params]
 mode = 'run'
+model_name = 'deepttc'
 generate_input_data = True
 benchmark_result_dir = 'results'
 use_lincs = True
@@ -28,7 +29,8 @@ transformer_intermediate_size_drug = 512
 transformer_num_attention_heads_drug = 8
 transformer_attention_probs_dropout = 0.1
 transformer_hidden_dropout_rate = 0.1
-learning_rate = 0.3
+learning_rate = 1e-4
+
 batch_size = 8
 epochs = 3
 

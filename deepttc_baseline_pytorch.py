@@ -1,7 +1,7 @@
 import os
-import wget
 import torch
 import candle
+from candle.file_utils import get_file
 import subprocess
 from Step3_model import *
 from Step2_DataEncoding import DataEncoding
@@ -150,18 +150,21 @@ class DataLoader:
         #    candle_data_dir = '.'
         data_dir = self.args.data_dir
 
-        import shutil
-        import pathlib
-        cwd = os.path.dirname(os.path.abspath(__file__))
-        shutil.copy(f'{cwd}/landmark_genes', data_dir)
+        #import shutil
+        #import pathlib
+        #cwd = os.path.dirname(os.path.abspath(__file__))
+        #shutil.copy(f'{cwd}/landmark_genes', data_dir)
         
         OUT_DIR = os.path.join(data_dir, 'GDSC_data')
+        #get_file(fname='DeepTTC_data.tar.gz', origin=url, unpack=True, data_dir=data_dir)
+
         url_length = len(url.split('/'))-4
         if not os.path.isdir(OUT_DIR):
             os.mkdir(OUT_DIR)
+        import wget
         subprocess.run(['wget', '--recursive', '--no-clobber', '-nH',
                    f'--cut-dirs={url_length}', '--no-parent', f'--directory-prefix={OUT_DIR}', f'{url}'])
-        # wget.download(url, out=OUT_DIR)
+        wget.download(url, out=OUT_DIR)
 
     def _process_data(self, args):
         train_drug = test_drug = train_rna = test_rna = None
