@@ -11,7 +11,13 @@ set -x
 # arg 3 CANDLE_CONFIG
 
 ### Path to your CANDLEized model's main Python script###
-CANDLE_MODEL="/DeepTTC/DeepTTC_candle.py"
+CANDLE_MODEL="DeepTTC_candle.py"
+
+# Path to directory containing model executable
+IMPROVE_MODEL_DIR=${IMPROVE_MODEL_DIR:-$( dirname -- "$0" )}
+
+# Check if executable exists
+CANDLE_MODEL=${IMPROVE_MODEL_DIR}/${CANDLE_MODEL}
 
 if [ $# -lt 2 ] ; then
 	echo "Illegalnumber of paramaters"
